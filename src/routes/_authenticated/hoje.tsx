@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   completeSession,
   fetchExerciseHistory,
+  fetchSessionSummary,
   fetchWorkouts,
   saveExercisePerformance,
   startSession,
@@ -94,18 +95,7 @@ function HojePage() {
   }
 
   if (finished) {
-    return (
-      <div className="space-y-4 rounded-2xl border border-border bg-card p-6 text-center shadow-card">
-        <CheckCircle2 className="mx-auto size-10 text-success" />
-        <h1 className="text-xl font-semibold">Treino finalizado</h1>
-        <p className="text-sm text-muted-foreground">
-          Seu desempenho foi registrado. As próximas recomendações já consideram esta sessão.
-        </p>
-        <Button asChild className="w-full">
-          <Link to="/progressao">Ver progressão</Link>
-        </Button>
-      </div>
-    );
+    return <FinishedCard sessionId={sessionId!} workoutName={workout?.name ?? "Treino"} />;
   }
 
   if (!sessionId) {
@@ -114,7 +104,7 @@ function HojePage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Check-in</h1>
           <p className="text-sm text-muted-foreground">
-            Contextualiza seu desempenho. Não decide sozinho sua progressão.
+            O check-in contextualiza seu desempenho. Não decide sozinho sua progressão.
           </p>
         </div>
 
@@ -171,9 +161,11 @@ function HojePage() {
         <ExerciseCard key={ex.id} exercise={ex} checkIn={checkIn} sessionId={sessionId} userId={userId!} />
       ))}
 
-      <Button className="w-full" onClick={finish}>
-        Finalizar treino
-      </Button>
+      <div className="sticky bottom-20 pt-1">
+        <Button className="h-12 w-full rounded-xl text-base shadow-card" onClick={finish}>
+          Finalizar treino
+        </Button>
+      </div>
     </div>
   );
 }
@@ -200,9 +192,9 @@ function Scale({
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors ${
+            className={`h-11 flex-1 rounded-xl border text-sm font-semibold transition-colors ${
               value === n
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-primary bg-primary text-primary-foreground shadow-card"
                 : "border-border bg-background text-muted-foreground hover:bg-secondary"
             }`}
           >
@@ -210,6 +202,44 @@ function Scale({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FinishedCard({ sessionId, workoutName }: { sessionId: string; workoutName: string }) {
+  const summary = useQuery({
+    queryKey: ["session-summary", sessionId],
+    queryFn: () => fetchSessionSummary(sessionId),
+  });
+
+  return (
+    <div className="space-y-5 rounded-3xl border border-border bg-card p-7 text-center shadow-card">
+      <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft">
+        <CheckCircle2 className="size-7 text-success" />
+      </span>
+      <div>
+        <h1 className="text-xl font-semibold">Treino concluído</h1>
+        <p className="text-sm text-muted-foreground">{workoutName}</p>
+      </div>
+      {summary.data && (
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <SummaryStat label="Exercícios" value={String(summary.data.exercises)} />
+          <SummaryStat label="Séries" value={String(summary.data.sets)} />
+          <SummaryStat label="Volume" value={`${summary.data.volume} kg`} />
+        </div>
+      )}
+      <Button asChild className="w-full">
+        <Link to="/progressao">Ver relatório de progressão</Link>
+      </Button>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-secondary p-3">
+      <p className="text-base font-semibold">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -236,6 +266,7 @@ function ExerciseCard({
   );
 
   const [load, setLoad] = useState<number | null>(null);
+  const [details, setDetails] = useState(false);
   const [sets, setSets] = useState(
     Array.from({ length: exercise.sets }, (_, i) => ({
       set_number: i + 1,
@@ -250,6 +281,8 @@ function ExerciseCard({
 
   const actualLoad = load ?? Number(exercise.current_load);
   const meta = DECISION_META[rec.decision];
+  const step = Number(exercise.suggested_increment) || 2.5;
+  const edited = load !== null && load !== rec.suggestedLoad;
 
   useEffect(() => {
     if (!history.data) return;
@@ -275,56 +308,112 @@ function ExerciseCard({
     );
   }
 
+  const nudge = (delta: number) =>
+    setLoad((prev) => Math.max(0, Math.round(((prev ?? actualLoad) + delta) * 100) / 100));
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+    <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs text-muted-foreground">Exercício {exercise.position}</p>
-          <h2 className="text-lg font-semibold">{exercise.exercise_name}</h2>
-          <p className="text-sm text-muted-foreground">
-            Última carga: {Number(exercise.current_load)} kg · {exercise.sets} × {exercise.min_reps}–
-            {exercise.max_reps} · RIR alvo {exercise.target_rir}
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-tight">{exercise.exercise_name}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {exercise.sets} × {exercise.min_reps}–{exercise.max_reps} · RIR alvo{" "}
+            {exercise.target_rir}
           </p>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badge}`}>
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badge}`}
+        >
+          <span className={`size-1.5 rounded-full ${meta.dot}`} />
           {meta.label}
         </span>
       </div>
 
-      <div className="mt-3 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
-        {rec.rationale}
-        {rec.trendWarning && (
-          <p className="mt-2 rounded-lg bg-warning-soft p-2 text-warning-foreground">
-            {rec.trendWarning}
-          </p>
-        )}
-      </div>
+      <p className="mt-3 text-sm text-foreground">{rec.message}</p>
+      {rec.establishingBaseline && (
+        <p className="mt-1 text-xs text-muted-foreground">Estabelecendo referência.</p>
+      )}
 
-      <div className="mt-4 space-y-1.5">
-        <Label className="text-xs">
-          Sugestão do sistema: {rec.suggestedLoad} kg — você decide a carga usada
-        </Label>
-        <Input
-          type="number"
-          step={0.5}
-          value={load ?? ""}
-          onChange={(e) => setLoad(e.target.value === "" ? null : Number(e.target.value))}
-        />
+      <button
+        type="button"
+        onClick={() => setDetails((v) => !v)}
+        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
+      >
+        Por que essa recomendação?
+        <ChevronDown className={`size-3.5 transition-transform ${details ? "rotate-180" : ""}`} />
+      </button>
+      {details && (
+        <p className="mt-2 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
+          {rec.rationale}
+          {rec.trendWarning && (
+            <span className="mt-2 block rounded-lg bg-warning-soft p-2 text-warning-foreground">
+              {rec.trendWarning}
+            </span>
+          )}
+        </p>
+      )}
+
+      <div className="mt-4 rounded-2xl bg-secondary/60 p-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground">
+            Carga utilizada · sugestão {rec.suggestedLoad} kg
+          </Label>
+          {edited && <span className="text-[11px] font-medium text-primary">ajustada por você</span>}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0 rounded-xl"
+            onClick={() => nudge(-step)}
+            aria-label="Diminuir carga"
+          >
+            <Minus className="size-4" />
+          </Button>
+          <Input
+            type="number"
+            inputMode="decimal"
+            step={0.5}
+            className="h-10 text-center text-base font-semibold"
+            value={load ?? ""}
+            onChange={(e) => setLoad(e.target.value === "" ? null : Number(e.target.value))}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0 rounded-xl"
+            onClick={() => nudge(step)}
+            aria-label="Aumentar carga"
+          >
+            <Plus className="size-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 space-y-2">
+        <div className="flex items-center gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="w-14">Série</span>
+          <span className="flex-1 text-center">Reps</span>
+          <span className="flex-1 text-center">RIR</span>
+        </div>
         {sets.map((s, i) => (
           <div key={s.set_number} className="flex items-center gap-2">
-            <span className="w-14 text-xs text-muted-foreground">Série {s.set_number}</span>
+            <span className="w-14 text-sm font-medium text-muted-foreground">{s.set_number}ª</span>
             <Input
               type="number"
-              placeholder="reps"
+              inputMode="numeric"
+              className="h-10 flex-1 text-center"
+              placeholder="—"
               value={s.reps ?? ""}
               onChange={(e) => updateSet(i, "reps", e.target.value)}
             />
             <Input
               type="number"
-              placeholder="RIR"
+              inputMode="numeric"
+              className="h-10 flex-1 text-center"
+              placeholder="—"
               value={s.rir ?? ""}
               onChange={(e) => updateSet(i, "rir", e.target.value)}
             />
