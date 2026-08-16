@@ -78,7 +78,7 @@ export function sessionsAtLoad(history: PastSession[], load: number): PastSessio
  */
 export function persistentDrop(sameLoad: PastSession[]): boolean {
   if (sameLoad.length < 3) return false;
-  const [t1, t2, t3] = sameLoad.slice(0, 3).map(totalReps) as [number, number, number];
+  const [t1, t2, t3] = sameLoad.slice(0, 3).map((s) => totalReps(s.sets)) as [number, number, number];
   if (!(t1 < t2 && t2 < t3)) return false;
   return t3 > 0 && (t3 - t1) / t3 >= 0.08;
 }
@@ -251,6 +251,16 @@ export function recommend(
         "Sua recuperação não indica necessidade de redução, mas sua performance vem caindo nas últimas sessões. Consolide a carga antes de aumentar a exigência.",
       trendWarning,
       establishingBaseline,
+    };
+  }
+
+  if (loadJustIncreased) {
+    return {
+      decision: "ACUMULAR",
+      suggestedLoad: load,
+      message: "Novo ciclo nesta carga: busque mais repetições.",
+      rationale: `Você iniciou um novo ciclo em ${load} kg. Isso não é regressão: acumule repetições dentro da faixa ${exercise.min_reps}–${exercise.max_reps} antes de aumentar novamente.`,
+      establishingBaseline: true,
     };
   }
 
