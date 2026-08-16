@@ -4,7 +4,7 @@ export interface Recommendation {
   decision: Decision;
   suggestedLoad: number;
   rationale: string;
-  trendWarning?: string;
+  trendWarning?: string | undefined;
 }
 
 function avg(values: number[]): number {
@@ -41,7 +41,7 @@ export function persistentDrop(history: PastSession[]): boolean {
   const samePosition = recent.every((s) => s.position === recent[0]!.position);
   const sameLoad = recent.every((s) => s.actual_load === recent[0]!.actual_load);
   if (!samePosition || !sameLoad) return false;
-  const [s1, s2, s3] = recent.map(totalReps) as [number, number, number];
+  const [s1, s2, s3] = recent.map((s) => totalReps(s.sets)) as [number, number, number];
   return s1 < s2 && s2 < s3;
 }
 
