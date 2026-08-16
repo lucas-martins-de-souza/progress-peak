@@ -171,6 +171,9 @@ export function recommend(
 
   // ---------- Novo ciclo de carga ----------
   const newCycle = sameLoad.length === 0 || Number(last.actual_load ?? 0) !== load;
+  const priorLoad = history[sameLoad.length];
+  const loadJustIncreased =
+    sameLoad.length === 1 && priorLoad != null && Number(priorLoad.actual_load ?? 0) < load;
   if (newCycle) {
     return {
       decision: "ACUMULAR",
