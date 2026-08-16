@@ -169,3 +169,33 @@ export async function fetchLastSession() {
   if (error) throw error;
   return data as unknown as (CheckIn & { id: string; workout_id: string; started_at: string; completed_at: string | null }) | null;
 }
+
+export interface PerformanceRow {
+  created_at: string;
+  session_id: string;
+  workout_exercise_id: string;
+  actual_load: number | null;
+  sets: { set_number: number; reps: number | null; rir: number | null }[];
+}
+
+/** All logged exercise performances since a date, most recent first. */
+export async function fetchPerformanceSince(sinceISO: string): Promise<PerformanceRow[]> {
+  const { data, error } = await supabase
+    .from("exercise_performance")
+    .select("created_at, session_id, workout_exercise_id, actual_load, set_performance(set_number, reps, rir)")
+    .gte("created_at", sinceISO)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => {
+    const r = row as unknown as PerformanceRow & {
+      set_performance: { set_number: number; reps: number | null; rir: number | null }[];
+    };
+    return {
+      created_at: r.created_at,
+      session_id: r.session_id,
+      workout_exercise_id: r.workout_exercise_id,
+      actual_load: r.actual_load,
+      sets: (r.set_performance ?? []).sort((a, b) => a.set_number - b.set_number),
+    };
+  });
+}

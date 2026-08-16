@@ -143,6 +143,9 @@ export function recommend(
     };
   }
 
+  // Dor moderada: nunca libera progressão neste exercício.
+  const moderatePain = pain === 3;
+
   // ---------- Retorno após ausência ----------
   if (longAbsence(history)) {
     return {
@@ -211,13 +214,16 @@ export function recommend(
         establishingBaseline,
       };
     }
-    if (lowRecovery) {
+    if (lowRecovery || moderatePain) {
       return {
         decision: "CONSOLIDAR",
         suggestedLoad: load,
-        message: "Zona de progressão atingida, mas recuperação baixa hoje.",
-        rationale:
-          "Você chegou à zona de progressão, porém vários sinais de recuperação estão baixos hoje. Repita a carga para consolidar e progrida na próxima oportunidade.",
+        message: moderatePain
+          ? "Zona de progressão atingida, mas com desconforto relatado."
+          : "Zona de progressão atingida, mas recuperação baixa hoje.",
+        rationale: moderatePain
+          ? "Você chegou à zona de progressão, porém relatou desconforto moderado. Por segurança, repita a carga e progrida quando o desconforto reduzir."
+          : "Você chegou à zona de progressão, porém vários sinais de recuperação estão baixos hoje. Repita a carga para consolidar e progrida na próxima oportunidade.",
         establishingBaseline,
       };
     }

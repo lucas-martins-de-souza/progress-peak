@@ -68,7 +68,7 @@ export const DECISION_META: Record<
     short: "Condições para aumentar a carga.",
   },
   ACUMULAR: {
-    label: "Acumular repetições",
+    label: "Acumular reps",
     dot: "bg-primary",
     badge: "bg-info-soft text-primary",
     short: "Mantenha a carga e busque mais repetições.",
