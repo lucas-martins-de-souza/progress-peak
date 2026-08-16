@@ -161,9 +161,11 @@ function HojePage() {
         <ExerciseCard key={ex.id} exercise={ex} checkIn={checkIn} sessionId={sessionId} userId={userId!} />
       ))}
 
-      <Button className="w-full" onClick={finish}>
-        Finalizar treino
-      </Button>
+      <div className="sticky bottom-20 pt-1">
+        <Button className="h-12 w-full rounded-xl text-base shadow-card" onClick={finish}>
+          Finalizar treino
+        </Button>
+      </div>
     </div>
   );
 }
@@ -190,9 +192,9 @@ function Scale({
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors ${
+            className={`h-11 flex-1 rounded-xl border text-sm font-semibold transition-colors ${
               value === n
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-primary bg-primary text-primary-foreground shadow-card"
                 : "border-border bg-background text-muted-foreground hover:bg-secondary"
             }`}
           >

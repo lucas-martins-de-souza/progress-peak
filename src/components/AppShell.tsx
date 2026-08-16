@@ -8,7 +8,7 @@ const nav = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
   { to: "/treinos", label: "Treinos", icon: Dumbbell },
   { to: "/hoje", label: "Hoje", icon: Play },
-  { to: "/progressao", label: "Progressão", icon: BarChart3 },
+  { to: "/progressao", label: "Relatório", icon: BarChart3 },
   { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
