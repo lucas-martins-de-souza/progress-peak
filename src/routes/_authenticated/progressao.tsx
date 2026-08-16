@@ -299,7 +299,13 @@ function RelatorioPage() {
                       stroke="var(--muted-foreground)"
                     />
                     <Tooltip formatter={(v: number) => [`${v} kg`, "Volume"]} />
-                    <Bar dataKey="volume" fill="var(--primary)" radius={[6, 6, 0, 0]} opacity={0.5} />
+                    <Bar
+                      dataKey="volume"
+                      fill="var(--primary)"
+                      radius={[6, 6, 0, 0]}
+                      opacity={0.5}
+                      maxBarSize={32}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
