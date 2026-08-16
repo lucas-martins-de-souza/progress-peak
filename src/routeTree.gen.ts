@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedProgressaoRouteImport } from './routes/_authenticated/progressao'
 import { Route as AuthenticatedTreinosRouteImport } from './routes/_authenticated/treinos'
 
 const IndexRoute = IndexRouteImport.update({
@@ -46,6 +47,11 @@ const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgressaoRoute = AuthenticatedProgressaoRouteImport.update({
+  id: '/progressao',
+  path: '/progressao',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTreinosRoute = AuthenticatedTreinosRouteImport.update({
   id: '/treinos',
   path: '/treinos',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/progressao': typeof AuthenticatedProgressaoRoute
   '/treinos': typeof AuthenticatedTreinosRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/hoje': typeof AuthenticatedHojeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/progressao': typeof AuthenticatedProgressaoRoute
   '/treinos': typeof AuthenticatedTreinosRoute
 }
 export interface FileRoutesById {
@@ -76,13 +84,28 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/progressao': typeof AuthenticatedProgressaoRoute
   '/_authenticated/treinos': typeof AuthenticatedTreinosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/hoje' | '/perfil' | '/treinos'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/hoje'
+    | '/perfil'
+    | '/progressao'
+    | '/treinos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/hoje' | '/perfil' | '/treinos'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/hoje'
+    | '/perfil'
+    | '/progressao'
+    | '/treinos'
   id:
     | '__root__'
     | '/'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/hoje'
     | '/_authenticated/perfil'
+    | '/_authenticated/progressao'
     | '/_authenticated/treinos'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/progressao': {
+      id: '/_authenticated/progressao'
+      path: '/progressao'
+      fullPath: '/progressao'
+      preLoaderRoute: typeof AuthenticatedProgressaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/treinos': {
       id: '/_authenticated/treinos'
       path: '/treinos'
@@ -158,6 +189,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedProgressaoRoute: typeof AuthenticatedProgressaoRoute
   AuthenticatedTreinosRoute: typeof AuthenticatedTreinosRoute
 }
 
@@ -165,6 +197,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedProgressaoRoute: AuthenticatedProgressaoRoute,
   AuthenticatedTreinosRoute: AuthenticatedTreinosRoute,
 }
 
