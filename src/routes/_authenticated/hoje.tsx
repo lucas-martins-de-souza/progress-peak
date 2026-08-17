@@ -265,9 +265,24 @@ function ExerciseCard({
     queryFn: () => fetchExerciseHistory(exercise.id),
   });
 
+  const hist = useMemo(() => history.data ?? [], [history.data]);
+  // Referência validada + PR: camada de contexto, independente do motor.
+  const baseCtx = useMemo(
+    () => loadContext(exercise, hist, Number(exercise.current_load)),
+    [exercise, hist],
+  );
+  // Se a carga registrada está muito abaixo da referência, o motor avalia a referência.
+  const engineExercise = useMemo(
+    () =>
+      baseCtx.belowReference && baseCtx.referenceLoad != null
+        ? { ...exercise, current_load: baseCtx.referenceLoad }
+        : exercise,
+    [exercise, baseCtx],
+  );
+
   const rec = useMemo(
-    () => recommend(exercise, history.data ?? [], checkIn),
-    [exercise, history.data, checkIn],
+    () => recommend(engineExercise, hist, checkIn),
+    [engineExercise, hist, checkIn],
   );
 
   const lastSession = history.data?.[0] ?? null;
@@ -287,12 +302,18 @@ function ExerciseCard({
   }, [history.data, rec.suggestedLoad, load]);
 
   const actualLoad = load ?? Number(exercise.current_load);
+  const ctx = useMemo(
+    () => loadContext(exercise, hist, actualLoad),
+    [exercise, hist, actualLoad],
+  );
   const target = useMemo(
-    () => sessionTarget(exercise, lastSession, rec.decision, actualLoad),
-    [exercise, lastSession, rec.decision, actualLoad],
+    () => sessionTarget(exercise, lastSession, rec.decision, actualLoad, ctx.referenceLoad),
+    [exercise, lastSession, rec.decision, actualLoad, ctx.referenceLoad],
   );
   const newLoad =
-    lastSession != null && actualLoad > Number(lastSession.actual_load ?? 0) ? actualLoad : null;
+    !ctx.belowReference && lastSession != null && actualLoad > Number(lastSession.actual_load ?? 0)
+      ? actualLoad
+      : null;
   const meta = DECISION_META[rec.decision];
   const step = Number(exercise.suggested_increment) || 2.5;
   const edited = load !== null && load !== rec.suggestedLoad;
