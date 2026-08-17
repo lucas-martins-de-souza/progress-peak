@@ -41,7 +41,13 @@ export function targetReps(
     return reps.map((r, i) => (i === idx ? Math.min(exercise.max_reps, r + 1) : r));
   }
 
-  return reps.map((r) => (r < top ? Math.min(exercise.max_reps, r + 1) : Math.min(exercise.max_reps, r + 1 > top ? r : r)));
+  const uneven = reps.some((r) => r < top);
+  if (uneven) {
+    // Nivela as séries mais baixas em direção à melhor série da última sessão.
+    return reps.map((r) => (r < top ? Math.min(exercise.max_reps, r + 1) : r));
+  }
+  // Séries já uniformes: evolução mínima na primeira série.
+  return reps.map((r, i) => (i === 0 ? Math.min(exercise.max_reps, r + 1) : r));
 }
 
 function avg(values: number[]): number {
