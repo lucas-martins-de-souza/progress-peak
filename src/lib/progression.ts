@@ -14,6 +14,42 @@ export interface Recommendation {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * Meta de repetições para hoje, derivada da última sessão real.
+ * Progressão pequena e gradual; nunca ultrapassa max_reps.
+ * Retorna null quando não faz sentido (sem histórico, carga nova, progredir/recuperar).
+ */
+export function targetReps(
+  exercise: WorkoutExercise,
+  last: PastSession | null,
+  decision: Decision,
+): number[] | null {
+  if (!last) return null;
+  if (decision === "PROGREDIR" || decision === "RECUPERAR") return null;
+  if (Number(last.actual_load ?? 0) !== Number(exercise.current_load)) return null;
+  const reps = last.sets.map((s) => s.reps ?? 0);
+  if (reps.length === 0 || reps.every((r) => r <= 0)) return null;
+
+  const top = Math.max(...reps);
+  const atCeiling = reps.some((r) => r >= exercise.max_reps);
+
+  if (atCeiling) {
+    // Perto do teto da faixa: evolução mínima — sobe apenas a série mais baixa.
+    const lowest = Math.min(...reps);
+    if (lowest >= exercise.max_reps) return reps;
+    const idx = reps.indexOf(lowest);
+    return reps.map((r, i) => (i === idx ? Math.min(exercise.max_reps, r + 1) : r));
+  }
+
+  const uneven = reps.some((r) => r < top);
+  if (uneven) {
+    // Nivela as séries mais baixas em direção à melhor série da última sessão.
+    return reps.map((r) => (r < top ? Math.min(exercise.max_reps, r + 1) : r));
+  }
+  // Séries já uniformes: evolução mínima na primeira série.
+  return reps.map((r, i) => (i === 0 ? Math.min(exercise.max_reps, r + 1) : r));
+}
+
 function avg(values: number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((a, b) => a + b, 0) / values.length;

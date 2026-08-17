@@ -63,8 +63,11 @@ export async function updateExercise(id: string, patch: Partial<WorkoutExercise>
 export async function fetchExerciseHistory(workoutExerciseId: string, limit = 10): Promise<PastSession[]> {
   const { data, error } = await supabase
     .from("exercise_performance")
-    .select("created_at, actual_load, position, suggested_load, decision, set_performance(set_number, reps, rir)")
+    .select(
+      "created_at, actual_load, position, suggested_load, decision, set_performance(set_number, reps, rir), training_sessions!inner(completed_at)",
+    )
     .eq("workout_exercise_id", workoutExerciseId)
+    .not("training_sessions.completed_at", "is", null)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
