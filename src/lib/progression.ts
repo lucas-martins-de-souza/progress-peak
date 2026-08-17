@@ -112,6 +112,35 @@ export function targetReps(
   return reps.map((r, i) => (i === 0 ? Math.min(exercise.max_reps, r + 1) : r));
 }
 
+export interface SessionTarget {
+  reps: number[] | null;
+  /** True quando a carga planejada é maior que a última usada: novo ciclo. */
+  newCycle: boolean;
+  message?: string;
+}
+
+/**
+ * Meta da sessão considerando a carga planejada para hoje.
+ * Toda nova carga (maior que a última usada) reinicia o ciclo de dupla
+ * progressão na faixa mínima configurada. Não altera as regras do motor.
+ */
+export function sessionTarget(
+  exercise: WorkoutExercise,
+  last: PastSession | null,
+  decision: Decision,
+  plannedLoad: number,
+): SessionTarget {
+  const lastLoad = last ? Number(last.actual_load ?? 0) : null;
+  if (lastLoad != null && Number(plannedLoad) > lastLoad) {
+    return {
+      reps: Array.from({ length: exercise.sets }, () => exercise.min_reps),
+      newCycle: true,
+      message: "Nova carga. Comece pela faixa mínima e acumule repetições.",
+    };
+  }
+  return { reps: targetReps(exercise, last, decision), newCycle: false };
+}
+
 function avg(values: number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((a, b) => a + b, 0) / values.length;
