@@ -1,5 +1,10 @@
 import type { CheckIn, Decision, PastSession, SetLog, WorkoutExercise } from "./types";
 
+/** Contexto de recuperação percebida (check-in). Nunca é decisão por si só. */
+export type RecoveryContext = "OPTIMAL" | "BELOW_OPTIMAL";
+/** Leitura objetiva da performance real mais recente. */
+export type PerformanceStatus = "EXCELLENT" | "IMPROVING" | "STABLE" | "DECLINING" | "UNKNOWN";
+
 export interface Recommendation {
   decision: Decision;
   suggestedLoad: number;
@@ -10,9 +15,66 @@ export interface Recommendation {
   trendWarning?: string | undefined;
   /** Low history = "estabelecendo referência". */
   establishingBaseline: boolean;
+  /** Contexto de recuperação registrado junto da decisão. */
+  recoveryContext?: RecoveryContext;
+  /** Leitura da performance real registrada junto da decisão. */
+  performanceStatus?: PerformanceStatus;
+  /** True quando recuperação percebida e performance real discordam. */
+  discordance?: boolean;
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Leitura objetiva da performance real mais recente na carga atual.
+ * Não decide nada: apenas classifica o que já aconteceu.
+ */
+export function performanceStatusOf(
+  exercise: WorkoutExercise,
+  history: PastSession[],
+): PerformanceStatus {
+  const load = Number(exercise.current_load) || 0;
+  const sameLoad = sessionsAtLoad(history, load);
+  const last = sameLoad[0];
+  if (!last) return "UNKNOWN";
+  const reps = last.sets.map((s) => s.reps ?? 0).filter((r) => r > 0);
+  if (reps.length === 0) return "UNKNOWN";
+  const rirs = last.sets.map((s) => s.rir).filter((r): r is number => r != null);
+  const avgRir = rirs.length > 0 ? rirs.reduce((a, b) => a + b, 0) / rirs.length : exercise.target_rir;
+  const minRep = Math.min(...reps);
+  const avgRep = reps.reduce((a, b) => a + b, 0) / reps.length;
+  const nearTop = minRep >= exercise.max_reps - 1 && avgRep >= exercise.max_reps - 0.7;
+  if (persistentDrop(sameLoad)) return "DECLINING";
+  if (nearTop && avgRir <= exercise.target_rir + 0.5) return "EXCELLENT";
+  const prev = sameLoad[1];
+  if (prev) {
+    const t = last.sets.reduce((a, s) => a + (s.reps ?? 0), 0);
+    const p = prev.sets.reduce((a, s) => a + (s.reps ?? 0), 0);
+    if (t > p) return "IMPROVING";
+    if (t < p) return "DECLINING";
+  }
+  return "STABLE";
+}
+
+/**
+ * Camada de interpretação: o check-in contextualiza a decisão,
+ * a performance valida a capacidade de progressão.
+ */
+export function recommend(
+  exercise: WorkoutExercise,
+  history: PastSession[],
+  checkIn: CheckIn | null,
+): Recommendation {
+  const base = baseRecommend(exercise, history, checkIn);
+  const recoveryContext: RecoveryContext =
+    recoverySignals(checkIn) >= 3 ? "BELOW_OPTIMAL" : "OPTIMAL";
+  const performanceStatus = performanceStatusOf(exercise, history);
+  const discordance =
+    (recoveryContext === "BELOW_OPTIMAL" &&
+      (performanceStatus === "EXCELLENT" || performanceStatus === "IMPROVING")) ||
+    (recoveryContext === "OPTIMAL" && performanceStatus === "DECLINING");
+  return { ...base, recoveryContext, performanceStatus, discordance };
+}
 
 /**
  * Meta de repetições para hoje, derivada da última sessão real.
@@ -135,7 +197,7 @@ export function longAbsence(history: PastSession[], days = 14): boolean {
  * The check-in modulates; real performance is the main evidence to unlock progression.
  * history[0] must be the most recent session for this exercise.
  */
-export function recommend(
+function baseRecommend(
   exercise: WorkoutExercise,
   history: PastSession[],
   checkIn: CheckIn | null,
@@ -251,15 +313,24 @@ export function recommend(
       };
     }
     if (lowRecovery || moderatePain) {
+      if (!moderatePain) {
+        // Discordância: recuperação abaixo do ideal, mas a performance real
+        // validou a capacidade de progressão. A performance prevalece.
+        return {
+          decision: "PROGREDIR",
+          suggestedLoad: round(load + increment),
+          message: "Excelente desempenho, apesar da recuperação abaixo do ideal.",
+          rationale:
+            "Sua recuperação ficou abaixo do ideal, mas sua performance atingiu a zona de progressão com esforço adequado. A performance de hoje sustenta a progressão — observe sua resposta nas próximas sessões.",
+          establishingBaseline,
+        };
+      }
       return {
         decision: "CONSOLIDAR",
         suggestedLoad: load,
-        message: moderatePain
-          ? "Zona de progressão atingida, mas com desconforto relatado."
-          : "Zona de progressão atingida, mas recuperação baixa hoje.",
-        rationale: moderatePain
-          ? "Você chegou à zona de progressão, porém relatou desconforto moderado. Por segurança, repita a carga e progrida quando o desconforto reduzir."
-          : "Você chegou à zona de progressão, porém vários sinais de recuperação estão baixos hoje. Repita a carga para consolidar e progrida na próxima oportunidade.",
+        message: "Zona de progressão atingida, mas com desconforto relatado.",
+        rationale:
+          "Você chegou à zona de progressão, porém relatou desconforto moderado. Por segurança, repita a carga e progrida quando o desconforto reduzir.",
         establishingBaseline,
       };
     }
@@ -320,8 +391,12 @@ export function recommend(
     return {
       decision: "ACUMULAR",
       suggestedLoad: load,
-      message: "Mantenha a carga e busque mais repetições.",
-      rationale: `Seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e avance gradualmente nas repetições.`,
+      message: lowRecovery
+        ? "Recuperação não ideal, mas sua performance está evoluindo."
+        : "Mantenha a carga e busque mais repetições.",
+      rationale: lowRecovery
+        ? `Sua recuperação não está ideal, mas seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e siga acumulando repetições.`
+        : `Seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e avance gradualmente nas repetições.`,
       establishingBaseline,
     };
   }
@@ -329,9 +404,12 @@ export function recommend(
   return {
     decision: "CONSOLIDAR",
     suggestedLoad: load,
-    message: "Performance estável. Continue construindo desempenho.",
-    rationale:
-      "Sua performance está estável nas últimas sessões. Mantenha a carga e continue construindo desempenho — não há evidência para aumentar nem para reduzir.",
+    message: lowRecovery
+      ? "Performance estável e recuperação não ideal: vamos consolidar."
+      : "Performance estável. Continue construindo desempenho.",
+    rationale: lowRecovery
+      ? "Sua performance permanece estável. Como sua recuperação não está ideal, vamos consolidar antes de buscar nova progressão."
+      : "Sua performance está estável nas últimas sessões. Mantenha a carga e continue construindo desempenho — não há evidência para aumentar nem para reduzir.",
     establishingBaseline,
   };
 }
