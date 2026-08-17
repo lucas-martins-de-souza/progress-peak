@@ -248,15 +248,6 @@ function formatDay(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
-function UnusedSummaryStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-secondary p-3">
-      <p className="text-base font-semibold">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
 function ExerciseCard({
   exercise,
   checkIn,
