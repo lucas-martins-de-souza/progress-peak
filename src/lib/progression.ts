@@ -1,5 +1,10 @@
 import type { CheckIn, Decision, PastSession, SetLog, WorkoutExercise } from "./types";
 
+/** Contexto de recuperação percebida (check-in). Nunca é decisão por si só. */
+export type RecoveryContext = "OPTIMAL" | "BELOW_OPTIMAL";
+/** Leitura objetiva da performance real mais recente. */
+export type PerformanceStatus = "EXCELLENT" | "IMPROVING" | "STABLE" | "DECLINING" | "UNKNOWN";
+
 export interface Recommendation {
   decision: Decision;
   suggestedLoad: number;
@@ -10,6 +15,12 @@ export interface Recommendation {
   trendWarning?: string | undefined;
   /** Low history = "estabelecendo referência". */
   establishingBaseline: boolean;
+  /** Contexto de recuperação registrado junto da decisão. */
+  recoveryContext?: RecoveryContext;
+  /** Leitura da performance real registrada junto da decisão. */
+  performanceStatus?: PerformanceStatus;
+  /** True quando recuperação percebida e performance real discordam. */
+  discordance?: boolean;
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;
