@@ -391,8 +391,12 @@ function baseRecommend(
     return {
       decision: "ACUMULAR",
       suggestedLoad: load,
-      message: "Mantenha a carga e busque mais repetições.",
-      rationale: `Seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e avance gradualmente nas repetições.`,
+      message: lowRecovery
+        ? "Recuperação não ideal, mas sua performance está evoluindo."
+        : "Mantenha a carga e busque mais repetições.",
+      rationale: lowRecovery
+        ? `Sua recuperação não está ideal, mas seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e siga acumulando repetições.`
+        : `Seu desempenho está evoluindo dentro da faixa ${exercise.min_reps}–${exercise.max_reps}. Mantenha a carga e avance gradualmente nas repetições.`,
       establishingBaseline,
     };
   }
@@ -400,9 +404,12 @@ function baseRecommend(
   return {
     decision: "CONSOLIDAR",
     suggestedLoad: load,
-    message: "Performance estável. Continue construindo desempenho.",
-    rationale:
-      "Sua performance está estável nas últimas sessões. Mantenha a carga e continue construindo desempenho — não há evidência para aumentar nem para reduzir.",
+    message: lowRecovery
+      ? "Performance estável e recuperação não ideal: vamos consolidar."
+      : "Performance estável. Continue construindo desempenho.",
+    rationale: lowRecovery
+      ? "Sua performance permanece estável. Como sua recuperação não está ideal, vamos consolidar antes de buscar nova progressão."
+      : "Sua performance está estável nas últimas sessões. Mantenha a carga e continue construindo desempenho — não há evidência para aumentar nem para reduzir.",
     establishingBaseline,
   };
 }
