@@ -386,6 +386,47 @@ function ExerciseCard({
           </div>
         )}
 
+        {(ctx.referenceLoad != null || ctx.personalRecord != null) && (
+          <p className="px-1 text-xs text-muted-foreground">
+            {ctx.referenceLoad != null && (
+              <>
+                Referência <span className="font-medium text-foreground">{ctx.referenceLoad} kg</span>
+              </>
+            )}
+            {ctx.referenceLoad != null && ctx.personalRecord != null && " · "}
+            {ctx.personalRecord != null && (
+              <>
+                PR{" "}
+                <span className="font-medium text-foreground">
+                  {ctx.personalRecord.load} kg × {ctx.personalRecord.reps}
+                </span>
+              </>
+            )}
+          </p>
+        )}
+
+        {ctx.belowReference && ctx.referenceLoad != null && (
+          <div className="rounded-2xl border border-warning/30 bg-warning-soft px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-warning-foreground">
+              🟡 Carga abaixo da referência
+            </p>
+            <p className="mt-0.5 text-sm text-warning-foreground">
+              Você utilizou uma carga abaixo da sua referência atual. O desempenho desta sessão
+              será registrado, mas não representa uma nova progressão.
+            </p>
+            <p className="mt-1 text-xs text-warning-foreground">
+              Referência: {ctx.referenceLoad} kg · Carga utilizada: {actualLoad} kg. Se estiver
+              adequada, procure retornar à carga de referência.
+            </p>
+          </div>
+        )}
+
+        {!ctx.belowReference && ctx.status === "CONSOLIDATING" && lastSession != null && (
+          <p className="px-1 text-xs text-muted-foreground">
+            Nova carga em consolidação — ainda não é sua carga de referência.
+          </p>
+        )}
+
         {newLoad != null && (
           <div className="rounded-2xl border border-success/30 bg-success-soft px-3 py-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-success">
