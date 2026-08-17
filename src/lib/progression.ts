@@ -26,6 +26,57 @@ export interface Recommendation {
 const round = (n: number) => Math.round(n * 100) / 100;
 
 /**
+ * Leitura objetiva da performance real mais recente na carga atual.
+ * Não decide nada: apenas classifica o que já aconteceu.
+ */
+export function performanceStatusOf(
+  exercise: WorkoutExercise,
+  history: PastSession[],
+): PerformanceStatus {
+  const load = Number(exercise.current_load) || 0;
+  const sameLoad = sessionsAtLoad(history, load);
+  const last = sameLoad[0];
+  if (!last) return "UNKNOWN";
+  const reps = last.sets.map((s) => s.reps ?? 0).filter((r) => r > 0);
+  if (reps.length === 0) return "UNKNOWN";
+  const rirs = last.sets.map((s) => s.rir).filter((r): r is number => r != null);
+  const avgRir = rirs.length > 0 ? rirs.reduce((a, b) => a + b, 0) / rirs.length : exercise.target_rir;
+  const minRep = Math.min(...reps);
+  const avgRep = reps.reduce((a, b) => a + b, 0) / reps.length;
+  const nearTop = minRep >= exercise.max_reps - 1 && avgRep >= exercise.max_reps - 0.7;
+  if (persistentDrop(sameLoad)) return "DECLINING";
+  if (nearTop && avgRir <= exercise.target_rir + 0.5) return "EXCELLENT";
+  const prev = sameLoad[1];
+  if (prev) {
+    const t = last.sets.reduce((a, s) => a + (s.reps ?? 0), 0);
+    const p = prev.sets.reduce((a, s) => a + (s.reps ?? 0), 0);
+    if (t > p) return "IMPROVING";
+    if (t < p) return "DECLINING";
+  }
+  return "STABLE";
+}
+
+/**
+ * Camada de interpretação: o check-in contextualiza a decisão,
+ * a performance valida a capacidade de progressão.
+ */
+export function recommend(
+  exercise: WorkoutExercise,
+  history: PastSession[],
+  checkIn: CheckIn | null,
+): Recommendation {
+  const base = baseRecommend(exercise, history, checkIn);
+  const recoveryContext: RecoveryContext =
+    recoverySignals(checkIn) >= 3 ? "BELOW_OPTIMAL" : "OPTIMAL";
+  const performanceStatus = performanceStatusOf(exercise, history);
+  const discordance =
+    (recoveryContext === "BELOW_OPTIMAL" &&
+      (performanceStatus === "EXCELLENT" || performanceStatus === "IMPROVING")) ||
+    (recoveryContext === "OPTIMAL" && performanceStatus === "DECLINING");
+  return { ...base, recoveryContext, performanceStatus, discordance };
+}
+
+/**
  * Meta de repetições para hoje, derivada da última sessão real.
  * Progressão pequena e gradual; nunca ultrapassa max_reps.
  * Retorna null quando não faz sentido (sem histórico, carga nova, progredir/recuperar).
