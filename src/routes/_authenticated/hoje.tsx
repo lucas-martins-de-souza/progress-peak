@@ -12,7 +12,7 @@ import {
   saveExercisePerformance,
   startSession,
 } from "@/lib/db";
-import { readinessLabel, readinessScore, recommend } from "@/lib/progression";
+import { readinessLabel, readinessScore, recommend, targetReps } from "@/lib/progression";
 import { DECISION_META, type CheckIn, type WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -265,6 +265,12 @@ function ExerciseCard({
     [exercise, history.data, checkIn],
   );
 
+  const lastSession = history.data?.[0] ?? null;
+  const target = useMemo(
+    () => targetReps(exercise, lastSession, rec.decision),
+    [exercise, lastSession, rec.decision],
+  );
+
   const [load, setLoad] = useState<number | null>(null);
   const [details, setDetails] = useState(false);
   const [sets, setSets] = useState(
@@ -333,6 +339,51 @@ function ExerciseCard({
       {rec.establishingBaseline && (
         <p className="mt-1 text-xs text-muted-foreground">Estabelecendo referência.</p>
       )}
+
+      <div className="mt-4 grid gap-2">
+        {lastSession ? (
+          <div className="rounded-2xl border border-border bg-background px-3 py-2.5">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Última sessão · {formatDay(lastSession.created_at)}
+            </p>
+            <p className="mt-0.5 text-sm font-medium">
+              {Number(lastSession.actual_load ?? 0)} kg ·{" "}
+              {lastSession.sets.map((s) => s.reps ?? "—").join(" / ")}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-background px-3 py-2.5">
+            <p className="text-sm font-medium">Primeira sessão registrada</p>
+            <p className="text-xs text-muted-foreground">Vamos estabelecer sua referência.</p>
+          </div>
+        )}
+
+        {target ? (
+          <div className="rounded-2xl border border-primary/30 bg-info-soft px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+              🎯 Meta de hoje
+            </p>
+            <p className="mt-0.5 text-lg font-semibold leading-tight text-primary">
+              {target.join(" / ")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Referência, não obrigação — registre o resultado real.
+            </p>
+          </div>
+        ) : rec.decision === "PROGREDIR" && lastSession ? (
+          <div className="rounded-2xl border border-success/30 bg-success-soft px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-success">
+              Nova carga sugerida
+            </p>
+            <p className="mt-0.5 text-lg font-semibold leading-tight text-success">
+              {rec.suggestedLoad} kg
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Você conquistou a zona de progressão. Teste a próxima carga.
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       <button
         type="button"
