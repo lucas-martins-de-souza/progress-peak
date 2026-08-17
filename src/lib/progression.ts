@@ -146,7 +146,7 @@ export function longAbsence(history: PastSession[], days = 14): boolean {
  * The check-in modulates; real performance is the main evidence to unlock progression.
  * history[0] must be the most recent session for this exercise.
  */
-export function recommend(
+function baseRecommend(
   exercise: WorkoutExercise,
   history: PastSession[],
   checkIn: CheckIn | null,
@@ -262,15 +262,24 @@ export function recommend(
       };
     }
     if (lowRecovery || moderatePain) {
+      if (!moderatePain) {
+        // Discordância: recuperação abaixo do ideal, mas a performance real
+        // validou a capacidade de progressão. A performance prevalece.
+        return {
+          decision: "PROGREDIR",
+          suggestedLoad: round(load + increment),
+          message: "Excelente desempenho, apesar da recuperação abaixo do ideal.",
+          rationale:
+            "Sua recuperação ficou abaixo do ideal, mas sua performance atingiu a zona de progressão com esforço adequado. A performance de hoje sustenta a progressão — observe sua resposta nas próximas sessões.",
+          establishingBaseline,
+        };
+      }
       return {
         decision: "CONSOLIDAR",
         suggestedLoad: load,
-        message: moderatePain
-          ? "Zona de progressão atingida, mas com desconforto relatado."
-          : "Zona de progressão atingida, mas recuperação baixa hoje.",
-        rationale: moderatePain
-          ? "Você chegou à zona de progressão, porém relatou desconforto moderado. Por segurança, repita a carga e progrida quando o desconforto reduzir."
-          : "Você chegou à zona de progressão, porém vários sinais de recuperação estão baixos hoje. Repita a carga para consolidar e progrida na próxima oportunidade.",
+        message: "Zona de progressão atingida, mas com desconforto relatado.",
+        rationale:
+          "Você chegou à zona de progressão, porém relatou desconforto moderado. Por segurança, repita a carga e progrida quando o desconforto reduzir.",
         establishingBaseline,
       };
     }
