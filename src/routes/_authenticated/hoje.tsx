@@ -13,6 +13,7 @@ import {
   startSession,
 } from "@/lib/db";
 import { readinessLabel, readinessScore, recommend, sessionTarget } from "@/lib/progression";
+import { loadContext } from "@/lib/reference";
 import { DECISION_META, type CheckIn, type WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -264,9 +265,24 @@ function ExerciseCard({
     queryFn: () => fetchExerciseHistory(exercise.id),
   });
 
+  const hist = useMemo(() => history.data ?? [], [history.data]);
+  // Referência validada + PR: camada de contexto, independente do motor.
+  const baseCtx = useMemo(
+    () => loadContext(exercise, hist, Number(exercise.current_load)),
+    [exercise, hist],
+  );
+  // Se a carga registrada está muito abaixo da referência, o motor avalia a referência.
+  const engineExercise = useMemo(
+    () =>
+      baseCtx.belowReference && baseCtx.referenceLoad != null
+        ? { ...exercise, current_load: baseCtx.referenceLoad }
+        : exercise,
+    [exercise, baseCtx],
+  );
+
   const rec = useMemo(
-    () => recommend(exercise, history.data ?? [], checkIn),
-    [exercise, history.data, checkIn],
+    () => recommend(engineExercise, hist, checkIn),
+    [engineExercise, hist, checkIn],
   );
 
   const lastSession = history.data?.[0] ?? null;
@@ -286,12 +302,18 @@ function ExerciseCard({
   }, [history.data, rec.suggestedLoad, load]);
 
   const actualLoad = load ?? Number(exercise.current_load);
+  const ctx = useMemo(
+    () => loadContext(exercise, hist, actualLoad),
+    [exercise, hist, actualLoad],
+  );
   const target = useMemo(
-    () => sessionTarget(exercise, lastSession, rec.decision, actualLoad),
-    [exercise, lastSession, rec.decision, actualLoad],
+    () => sessionTarget(exercise, lastSession, rec.decision, actualLoad, ctx.referenceLoad),
+    [exercise, lastSession, rec.decision, actualLoad, ctx.referenceLoad],
   );
   const newLoad =
-    lastSession != null && actualLoad > Number(lastSession.actual_load ?? 0) ? actualLoad : null;
+    !ctx.belowReference && lastSession != null && actualLoad > Number(lastSession.actual_load ?? 0)
+      ? actualLoad
+      : null;
   const meta = DECISION_META[rec.decision];
   const step = Number(exercise.suggested_increment) || 2.5;
   const edited = load !== null && load !== rec.suggestedLoad;
@@ -362,6 +384,47 @@ function ExerciseCard({
             <p className="text-sm font-medium">Primeira sessão registrada</p>
             <p className="text-xs text-muted-foreground">Vamos estabelecer sua referência.</p>
           </div>
+        )}
+
+        {(ctx.referenceLoad != null || ctx.personalRecord != null) && (
+          <p className="px-1 text-xs text-muted-foreground">
+            {ctx.referenceLoad != null && (
+              <>
+                Referência <span className="font-medium text-foreground">{ctx.referenceLoad} kg</span>
+              </>
+            )}
+            {ctx.referenceLoad != null && ctx.personalRecord != null && " · "}
+            {ctx.personalRecord != null && (
+              <>
+                PR{" "}
+                <span className="font-medium text-foreground">
+                  {ctx.personalRecord.load} kg × {ctx.personalRecord.reps}
+                </span>
+              </>
+            )}
+          </p>
+        )}
+
+        {ctx.belowReference && ctx.referenceLoad != null && (
+          <div className="rounded-2xl border border-warning/30 bg-warning-soft px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-warning-foreground">
+              🟡 Carga abaixo da referência
+            </p>
+            <p className="mt-0.5 text-sm text-warning-foreground">
+              Você utilizou uma carga abaixo da sua referência atual. O desempenho desta sessão
+              será registrado, mas não representa uma nova progressão.
+            </p>
+            <p className="mt-1 text-xs text-warning-foreground">
+              Referência: {ctx.referenceLoad} kg · Carga utilizada: {actualLoad} kg. Se estiver
+              adequada, procure retornar à carga de referência.
+            </p>
+          </div>
+        )}
+
+        {!ctx.belowReference && ctx.status === "CONSOLIDATING" && lastSession != null && (
+          <p className="px-1 text-xs text-muted-foreground">
+            Nova carga em consolidação — ainda não é sua carga de referência.
+          </p>
         )}
 
         {newLoad != null && (

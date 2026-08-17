@@ -117,6 +117,8 @@ export interface SessionTarget {
   /** True quando a carga planejada é maior que a última usada: novo ciclo. */
   newCycle: boolean;
   message?: string;
+  /** True quando a carga de hoje está muito abaixo da referência validada. */
+  belowReference?: boolean;
 }
 
 /**
@@ -129,7 +131,16 @@ export function sessionTarget(
   last: PastSession | null,
   decision: Decision,
   plannedLoad: number,
+  referenceLoad?: number | null,
 ): SessionTarget {
+  if (referenceLoad != null && referenceLoad > 0 && Number(plannedLoad) < referenceLoad * 0.85) {
+    return {
+      reps: null,
+      newCycle: false,
+      belowReference: true,
+      message: `Carga abaixo da referência (${referenceLoad} kg). O resultado será registrado, mas não representa nova progressão.`,
+    };
+  }
   const lastLoad = last ? Number(last.actual_load ?? 0) : null;
   if (lastLoad != null && Number(plannedLoad) > lastLoad) {
     return {
