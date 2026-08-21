@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Dumbbell } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { countSessions, fetchLastSession, fetchProfile, fetchWorkouts } from "@/lib/db";
 import { readinessLabel, readinessScore } from "@/lib/progression";
@@ -43,67 +43,93 @@ function Dashboard() {
   const readiness = last.data ? readinessScore(last.data) : null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-muted-foreground">{greeting()},</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {profile.data?.name?.trim() || "atleta"}
+    <div className="animate-rise space-y-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 className="text-xl font-semibold tracking-tight">
+          {profile.data?.name?.trim() || "Atleta"}
         </h1>
+        <p className="label-tech">{greeting()}</p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Próximo treino
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <Dumbbell className="size-5 text-primary" />
-          <p className="text-lg font-semibold">{nextWorkout?.name ?? "Nenhum treino criado"}</p>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <section className="relative border-l-2 border-primary pl-5">
+        <p className="label-tech text-primary">Treino de hoje</p>
+        <h2 className="mt-2 text-4xl font-bold leading-none tracking-tight">
+          {nextWorkout?.name ?? "Nenhum treino"}
+        </h2>
+        <p className="data mt-3 text-sm text-muted-foreground">
           {nextWorkout
             ? `${nextWorkout.workout_exercises.length} exercícios`
             : "Monte seu primeiro treino para começar."}
         </p>
-        <div className="mt-4">
+        <div className="mt-6">
           {nextWorkout ? (
-            <Button asChild className="w-full">
+            <Button
+              asChild
+              className="h-12 w-full text-[12px] font-semibold uppercase tracking-[0.18em]"
+            >
               <Link to="/hoje">
                 Começar treino <ArrowRight className="size-4" />
               </Link>
             </Button>
           ) : (
-            <Button asChild variant="outline" className="w-full">
+            <Button
+              asChild
+              variant="outline"
+              className="h-12 w-full text-[12px] font-semibold uppercase tracking-[0.18em]"
+            >
               <Link to="/treinos">Criar treino</Link>
             </Button>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-          <p className="text-xs text-muted-foreground">Prontidão</p>
-          <p className="mt-1 text-xl font-semibold">
-            {readiness ? readinessLabel(readiness) : "—"}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">Baseada no último check-in</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-          <p className="text-xs text-muted-foreground">Treinos registrados</p>
-          <p className="mt-1 text-xl font-semibold">{sessions.data ?? 0}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Sessões finalizadas</p>
-        </div>
-      </div>
+      <section className="grid grid-cols-2 divide-x divide-border border-y border-border">
+        <Metric
+          label="Prontidão"
+          value={readiness ? readinessLabel(readiness) : "—"}
+          hint="Último check-in"
+        />
+        <Metric
+          label="Sessões"
+          value={String(sessions.data ?? 0)}
+          hint="Treinos finalizados"
+          className="pl-5"
+        />
+      </section>
 
-      <div className="rounded-2xl border border-border bg-info-soft p-5">
-        <p className="text-sm font-medium text-primary">Resumo da progressão</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cada exercício progride no próprio ritmo. Abra a aba Progressão para ver o estado atual,
+      <section>
+        <p className="label-tech">Progressão</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Cada exercício progride no próprio ritmo. Abra o relatório para ver estado atual,
           histórico de cargas e repetições exercício por exercício.
         </p>
-        <Link to="/progressao" className="mt-3 inline-flex text-sm font-medium text-primary">
-          Ver progressão →
+        <Link
+          to="/progressao"
+          className="mt-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary transition-opacity hover:opacity-70"
+        >
+          Ver relatório <ArrowRight className="size-3.5" />
         </Link>
-      </div>
+      </section>
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  hint,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <div className={`py-5 pr-5 ${className}`}>
+      <p className="label-tech">{label}</p>
+      <p className="data mt-2 text-2xl font-bold leading-none">{value}</p>
+      <p className="mt-2 text-[11px] text-muted-foreground">{hint}</p>
     </div>
   );
 }

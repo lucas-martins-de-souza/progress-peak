@@ -59,30 +59,53 @@ export interface PastSession {
 
 export const DECISION_META: Record<
   Decision,
-  { label: string; dot: string; badge: string; short: string }
+  {
+    label: string;
+    dot: string;
+    badge: string;
+    short: string;
+    /** Cor de texto do estado. */
+    text: string;
+    /** Borda do bloco de estado. */
+    border: string;
+    /** Fundo tênue do bloco de estado. */
+    bg: string;
+  }
 > = {
   PROGREDIR: {
-    label: "Progredir",
+    label: "PROGREDIR",
     dot: "bg-success",
     badge: "bg-success-soft text-success",
-    short: "Condições para aumentar a carga.",
+    short: "Você atingiu a zona de progressão.",
+    text: "text-success",
+    border: "border-success/35",
+    bg: "bg-success-soft",
   },
   ACUMULAR: {
-    label: "Acumular reps",
+    label: "ACUMULAR REPS",
     dot: "bg-primary",
     badge: "bg-info-soft text-primary",
-    short: "Mantenha a carga e busque mais repetições.",
+    short: "Continue acumulando repetições na carga atual.",
+    text: "text-primary",
+    border: "border-primary/35",
+    bg: "bg-info-soft",
   },
   CONSOLIDAR: {
-    label: "Consolidar / repetir",
+    label: "CONSOLIDAR",
     dot: "bg-warning",
-    badge: "bg-warning-soft text-warning-foreground",
-    short: "Repita a carga atual para consolidar.",
+    badge: "bg-warning-soft text-warning",
+    short: "Mantenha a carga e estabilize a performance.",
+    text: "text-warning",
+    border: "border-warning/35",
+    bg: "bg-warning-soft",
   },
   RECUPERAR: {
-    label: "Recuperar",
+    label: "RECUPERAR",
     dot: "bg-danger",
     badge: "bg-danger-soft text-danger",
-    short: "Reduza a exigência e priorize recuperação.",
+    short: "Reduza o esforço e retome gradualmente.",
+    text: "text-danger",
+    border: "border-danger/35",
+    bg: "bg-danger-soft",
   },
 };
