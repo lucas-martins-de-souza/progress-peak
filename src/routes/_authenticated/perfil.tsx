@@ -7,7 +7,6 @@ import { fetchProfile, saveProfile } from "@/lib/db";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
@@ -27,6 +26,20 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 const GOALS = ["Hipertrofia", "Emagrecimento", "Recomposição corporal", "Força", "Manutenção", "Outro"];
 const LEVELS = ["Iniciante", "Intermediário", "Avançado"];
 const SEXES = ["Masculino", "Feminino", "Outro"];
+
+const selectClass =
+  "h-11 w-full rounded-sm border border-border bg-transparent px-3 text-sm text-foreground transition-colors focus:border-primary focus:outline-none";
+const inputClass =
+  "data h-11 rounded-sm border-border bg-transparent text-sm focus-visible:border-primary";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <p className="label-tech">{label}</p>
+      {children}
+    </div>
+  );
+}
 
 function PerfilPage() {
   const { userId } = useAuth();
@@ -71,27 +84,33 @@ function PerfilPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
+    <div className="animate-rise space-y-8">
+      <div>
+        <p className="label-tech text-primary">Atleta</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">Perfil</h1>
+      </div>
 
-      <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card">
-        <div className="space-y-1.5">
-          <Label>Nome</Label>
-          <Input value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Idade</Label>
+      <div className="space-y-6 border-t border-border pt-6">
+        <Field label="Nome">
+          <Input
+            className={inputClass}
+            value={form.name ?? ""}
+            onChange={(e) => set("name", e.target.value)}
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Idade">
             <Input
               type="number"
+              className={inputClass}
               value={form.age ?? ""}
               onChange={(e) => set("age", e.target.value === "" ? null : Number(e.target.value))}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Sexo</Label>
+          </Field>
+          <Field label="Sexo">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className={selectClass}
               value={form.sex ?? ""}
               onChange={(e) => set("sex", e.target.value || null)}
             >
@@ -100,28 +119,28 @@ function PerfilPage() {
                 <option key={s}>{s}</option>
               ))}
             </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Altura (cm)</Label>
+          </Field>
+          <Field label="Altura (cm)">
             <Input
               type="number"
+              className={inputClass}
               value={form.height ?? ""}
               onChange={(e) => set("height", e.target.value === "" ? null : Number(e.target.value))}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Peso (kg)</Label>
+          </Field>
+          <Field label="Peso (kg)">
             <Input
               type="number"
+              className={inputClass}
               value={form.weight ?? ""}
               onChange={(e) => set("weight", e.target.value === "" ? null : Number(e.target.value))}
             />
-          </div>
+          </Field>
         </div>
-        <div className="space-y-1.5">
-          <Label>Objetivo</Label>
+
+        <Field label="Objetivo">
           <select
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className={selectClass}
             value={form.goal ?? ""}
             onChange={(e) => set("goal", e.target.value || null)}
           >
@@ -130,12 +149,12 @@ function PerfilPage() {
               <option key={g}>{g}</option>
             ))}
           </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Experiência</Label>
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Experiência">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className={selectClass}
               value={form.experience_level ?? ""}
               onChange={(e) => set("experience_level", e.target.value || null)}
             >
@@ -144,11 +163,10 @@ function PerfilPage() {
                 <option key={l}>{l}</option>
               ))}
             </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Frequência semanal</Label>
+          </Field>
+          <Field label="Frequência semanal">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className={selectClass}
               value={form.weekly_frequency ?? ""}
               onChange={(e) =>
                 set("weekly_frequency", e.target.value === "" ? null : Number(e.target.value))
@@ -161,14 +179,19 @@ function PerfilPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </Field>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="w-full">
+
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="h-12 w-full text-[12px] font-semibold uppercase tracking-[0.18em]"
+        >
           Salvar perfil
         </Button>
       </div>
 
-      <p className="rounded-2xl bg-secondary p-4 text-sm text-muted-foreground">
+      <p className="border-t border-border pt-5 text-xs leading-relaxed text-muted-foreground">
         Esses dados contextualizam sua experiência no LM Progress. As decisões de progressão são
         baseadas principalmente no seu desempenho real e histórico de treino.
       </p>
