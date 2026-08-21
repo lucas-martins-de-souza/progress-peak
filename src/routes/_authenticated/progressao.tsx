@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Trophy } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -46,6 +46,18 @@ const PERIODS = [
 
 const fmt = (n: number) =>
   Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".", ",");
+
+const selectClass =
+  "h-10 w-full rounded-sm border border-border bg-transparent px-3 text-sm text-foreground transition-colors focus:border-primary focus:outline-none";
+
+const tooltipStyle = {
+  backgroundColor: "var(--surface-2)",
+  border: "1px solid var(--border)",
+  borderRadius: "4px",
+  fontSize: "12px",
+  fontFamily: "var(--font-mono)",
+  color: "var(--foreground)",
+} as const;
 
 function RelatorioPage() {
   const [weeks, setWeeks] = useState(8);
@@ -163,14 +175,14 @@ function RelatorioPage() {
   const [showHistory, setShowHistory] = useState(false);
 
   return (
-    <div className="space-y-6 pb-4">
-      <header className="space-y-3">
+    <div className="animate-rise space-y-8 pb-4">
+      <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Sua evolução</h1>
-          <p className="text-sm text-muted-foreground">Relatório de progressão</p>
+          <p className="label-tech text-primary">Relatório</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Sua evolução</h1>
         </div>
         <select
-          className="h-9 rounded-full border border-border bg-card px-3 text-sm font-medium shadow-card"
+          className="h-9 shrink-0 rounded-sm border border-border bg-transparent px-2 text-[11px] font-medium text-muted-foreground focus:border-primary focus:outline-none"
           value={weeks}
           onChange={(e) => setWeeks(Number(e.target.value))}
         >
@@ -182,45 +194,44 @@ function RelatorioPage() {
         </select>
       </header>
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-3 divide-x divide-border border-y border-border">
         <Kpi label="PRs" value={`+${kpi.prs}`} tone="success" />
         <Kpi
           label="Evolução de carga"
           value={`${kpi.evolution >= 0 ? "+" : ""}${fmt(kpi.evolution)}%`}
           tone={kpi.evolution >= 0 ? "success" : "muted"}
+          className="pl-5"
         />
-        <Kpi label="Treinos" value={String(kpi.sessions)} tone="muted" />
+        <Kpi label="Treinos" value={String(kpi.sessions)} tone="muted" className="pl-5" />
       </section>
 
-      <section className="space-y-4">
-        <select
-          className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm font-medium shadow-card"
-          value={exerciseId}
-          onChange={(e) => setExerciseId(e.target.value)}
-        >
-          {allExercises.map((ex) => (
-            <option key={ex.id} value={ex.id}>
-              {ex.exercise_name}
-            </option>
-          ))}
-        </select>
+      <section className="space-y-6">
+        <div className="space-y-2">
+          <p className="label-tech">Exercício</p>
+          <select
+            className={selectClass}
+            value={exerciseId}
+            onChange={(e) => setExerciseId(e.target.value)}
+          >
+            {allExercises.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.exercise_name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {pr && pr.load > 0 && (
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 shadow-card">
-            <span className="flex size-10 items-center justify-center rounded-full bg-success-soft">
-              <Trophy className="size-5 text-success" />
-            </span>
+          <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                PR atual
-              </p>
-              <p className="text-lg font-semibold">
-                {fmt(pr.load)} kg × {pr.reps}
+              <p className="label-tech">PR atual</p>
+              <p className="data mt-1.5 text-2xl font-bold leading-none">
+                {fmt(pr.load)} kg <span className="text-muted-foreground">× {pr.reps}</span>
               </p>
             </div>
             {rec && (
               <span
-                className={`ml-auto rounded-full px-2.5 py-1 text-xs font-semibold ${DECISION_META[rec.decision].badge}`}
+                className={`text-[11px] font-bold uppercase tracking-[0.14em] ${DECISION_META[rec.decision].text}`}
               >
                 {DECISION_META[rec.decision].label}
               </span>
@@ -229,131 +240,126 @@ function RelatorioPage() {
         )}
 
         {series.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          <p className="border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             Ainda não há sessões registradas para este exercício.
           </p>
         ) : (
           <>
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-              <div className="mb-1 flex items-baseline justify-between">
-                <h2 className="text-sm font-semibold">Carga ao longo do tempo</h2>
-                <span className="text-sm font-semibold text-success">
-                  {loadDelta >= 0 ? "+" : ""}
-                  {fmt(loadDelta)} kg
-                </span>
-              </div>
-              <p className="mb-3 text-xs text-muted-foreground">desde o início do histórico</p>
-              <div className="h-48">
+            <Chart
+              title="Carga"
+              delta={`${loadDelta >= 0 ? "+" : ""}${fmt(loadDelta)} kg`}
+              hint="desde o início do histórico"
+              tone="success"
+            >
+              <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={series}>
+                  <AreaChart data={series} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="loadFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
                         <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                    <CartesianGrid vertical={false} stroke="var(--border)" />
                     <XAxis
                       dataKey="date"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                       stroke="var(--muted-foreground)"
                     />
                     <YAxis
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 11 }}
-                      width={34}
+                      tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
+                      width={30}
                       stroke="var(--muted-foreground)"
                     />
-                    <Tooltip formatter={(v: number) => [`${fmt(v)} kg`, "Carga"]} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ stroke: "var(--border)" }}
+                      formatter={(v: number) => [`${fmt(v)} kg`, "Carga"]}
+                    />
                     <Area
                       type="monotone"
                       dataKey="carga"
                       stroke="var(--primary)"
-                      strokeWidth={2.5}
+                      strokeWidth={2}
                       fill="url(#loadFill)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Chart>
 
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-sm font-semibold">Volume semanal</h2>
-                <span className="text-xs font-medium text-muted-foreground">
-                  {volumeDelta >= 0 ? "+" : ""}
-                  {fmt(volumeDelta)}% no período
-                </span>
-              </div>
-              <div className="h-32">
+            <Chart
+              title="Volume semanal"
+              delta={`${volumeDelta >= 0 ? "+" : ""}${fmt(volumeDelta)}%`}
+              hint="no período"
+              tone="muted"
+            >
+              <div className="h-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weekly}>
+                  <BarChart data={weekly} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis
                       dataKey="semana"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                       stroke="var(--muted-foreground)"
                     />
-                    <Tooltip formatter={(v: number) => [`${v} kg`, "Volume"]} />
-                    <Bar
-                      dataKey="volume"
-                      fill="var(--primary)"
-                      radius={[6, 6, 0, 0]}
-                      opacity={0.5}
-                      maxBarSize={32}
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ fill: "var(--surface-2)" }}
+                      formatter={(v: number) => [`${v} kg`, "Volume"]}
                     />
+                    <Bar dataKey="volume" fill="var(--primary)" opacity={0.55} maxBarSize={28} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Chart>
 
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-              <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
-                Repetições por sessão
-              </h2>
-              <div className="h-24">
+            <Chart title="Repetições por sessão" tone="muted">
+              <div className="h-20">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={series}>
+                  <LineChart data={series} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                     <XAxis dataKey="date" hide />
-                    <Tooltip formatter={(v: number) => [`${v} reps`, "Total"]} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ stroke: "var(--border)" }}
+                      formatter={(v: number) => [`${v} reps`, "Total"]}
+                    />
                     <Line
                       type="monotone"
                       dataKey="reps"
                       stroke="var(--muted-foreground)"
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                       dot={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Chart>
 
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}
-              className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-5 py-3.5 text-sm font-medium shadow-card"
+              className="flex w-full items-center justify-between border-y border-border py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
             >
-              Ver histórico completo
+              Histórico completo
               <ChevronDown
-                className={`size-4 text-muted-foreground transition-transform ${showHistory ? "rotate-180" : ""}`}
+                className={`size-4 transition-transform duration-200 ${showHistory ? "rotate-180" : ""}`}
               />
             </button>
 
             {showHistory && (
-              <div className="space-y-2 rounded-2xl border border-border bg-card p-5 text-sm shadow-card">
+              <div className="animate-rise divide-y divide-border border-b border-border text-sm">
                 {history.data!.map((h) => (
-                  <div
-                    key={h.created_at}
-                    className="flex justify-between gap-3 border-b border-border/70 pb-2 last:border-0 last:pb-0"
-                  >
-                    <span className="text-muted-foreground">
+                  <div key={h.created_at} className="flex justify-between gap-3 py-2.5">
+                    <span className="data text-xs text-muted-foreground">
                       {new Date(h.created_at).toLocaleDateString("pt-BR")}
                     </span>
-                    <span className="text-right">
+                    <span className="data text-right text-xs">
                       {fmt(Number(h.actual_load ?? 0))} kg ·{" "}
                       {h.sets
                         .map((s) => `${s.reps ?? "-"}${s.rir != null ? `(RIR ${s.rir})` : ""}`)
@@ -370,21 +376,54 @@ function RelatorioPage() {
   );
 }
 
+function Chart({
+  title,
+  delta,
+  hint,
+  tone,
+  children,
+}: {
+  title: string;
+  delta?: string;
+  hint?: string;
+  tone: "success" | "muted";
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <p className="label-tech">{title}</p>
+        {delta && (
+          <p className="data text-sm font-bold">
+            <span className={tone === "success" ? "text-success" : "text-foreground"}>{delta}</span>
+            {hint && <span className="ml-1.5 text-[10px] text-muted-foreground">{hint}</span>}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function Kpi({
   label,
   value,
   tone,
+  className = "",
 }: {
   label: string;
   value: string;
   tone: "success" | "muted";
+  className?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-      <p className={`text-xl font-semibold ${tone === "success" ? "text-success" : "text-foreground"}`}>
+    <div className={`py-5 pr-3 ${className}`}>
+      <p
+        className={`data text-2xl font-bold leading-none ${tone === "success" ? "text-success" : "text-foreground"}`}
+      >
         {value}
       </p>
-      <p className="mt-1 text-xs leading-tight text-muted-foreground">{label}</p>
+      <p className="label-tech mt-2 leading-tight">{label}</p>
     </div>
   );
 }
