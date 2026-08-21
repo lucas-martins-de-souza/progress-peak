@@ -570,9 +570,11 @@ function ExerciseCard({
 function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-5 py-3">
-      <span className="label-tech">{label}</span>
-      <span className="data text-right text-sm font-semibold">{value}</span>
-      {hint && <span className="sr-only">{hint}</span>}
+      <span className="min-w-0">
+        <span className="label-tech block">{label}</span>
+        {hint && <span className="mt-0.5 block text-[11px] text-muted-foreground">{hint}</span>}
+      </span>
+      <span className="data shrink-0 text-right text-sm font-semibold">{value}</span>
     </div>
   );
 }
