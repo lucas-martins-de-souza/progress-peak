@@ -206,8 +206,9 @@ function Scale({
 }) {
   const options = [];
   for (let i = min; i <= 5; i++) options.push(i);
+  // Dor só ganha destaque de alerta a partir de 3; 0-2 seguem o azul LM.
   const active =
-    tone === "danger"
+    tone === "danger" && value >= 3
       ? "border-danger text-danger bg-danger-soft"
       : "border-primary text-primary bg-info-soft";
   return (
