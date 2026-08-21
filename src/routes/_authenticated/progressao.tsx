@@ -249,11 +249,11 @@ function RelatorioPage() {
               title="Carga"
               delta={`${loadDelta >= 0 ? "+" : ""}${fmt(loadDelta)} kg`}
               hint="desde o início do histórico"
-              tone="success"
+              tone={loadDelta >= 0 ? "success" : "muted"}
             >
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={series} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <AreaChart data={series} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="loadFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
@@ -300,7 +300,7 @@ function RelatorioPage() {
             >
               <div className="h-28">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weekly} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <BarChart data={weekly} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
                     <XAxis
                       dataKey="semana"
                       tickLine={false}
@@ -322,7 +322,7 @@ function RelatorioPage() {
             <Chart title="Repetições por sessão" tone="muted">
               <div className="h-20">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={series} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <LineChart data={series} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
                     <XAxis dataKey="date" hide />
                     <Tooltip
                       contentStyle={tooltipStyle}
