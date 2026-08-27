@@ -149,6 +149,47 @@
   border-radius: var(--radius);
 }
 
+/* Card técnico elevado: superfície levemente iluminada no topo. */
+@utility panel-raised {
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 0.035), transparent 120px),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.04) inset,
+    0 18px 40px oklch(0 0 0 / 0.5);
+}
+
+/* Halo neon discreto usando a cor corrente do bloco. */
+@utility neon-halo {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, currentColor 30%, transparent),
+    0 0 28px -8px color-mix(in oklab, currentColor 55%, transparent),
+    0 0 60px -30px color-mix(in oklab, currentColor 80%, transparent) inset;
+}
+
+/* Anéis técnicos sutis usados atrás de números de destaque. */
+@utility tech-rings {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      circle at 100% 50%,
+      color-mix(in oklab, currentColor 16%, transparent) 0 1px,
+      transparent 1px 46px,
+      color-mix(in oklab, currentColor 12%, transparent) 46px 47px,
+      transparent 47px 92px,
+      color-mix(in oklab, currentColor 8%, transparent) 92px 93px,
+      transparent 93px
+    );
+    opacity: 0.9;
+  }
+}
+
+
 /* Linha superior luminosa usada em destaques de estado. */
 @utility rule-top {
   &::before {
