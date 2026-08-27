@@ -165,13 +165,15 @@ function HojePage() {
 
   return (
     <div className="animate-rise space-y-8">
-      <div className="border-l-2 border-primary pl-4">
+      <div className="panel-raised relative overflow-hidden px-5 py-5 sm:px-6">
+        <span className="absolute inset-y-0 left-0 w-px bg-primary" />
         <p className="label-tech text-primary">Sessão em andamento</p>
-        <h1 className="mt-1.5 text-2xl font-bold tracking-tight">{workout?.name}</h1>
-        <p className="data mt-1 text-[11px] text-muted-foreground">
+        <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">{workout?.name}</h1>
+        <p className="data mt-1.5 text-[11px] text-muted-foreground">
           Prontidão {readinessLabel(readiness)} · salvamento automático
         </p>
       </div>
+
 
       <div className="space-y-6">
         {workout?.workout_exercises.map((ex) => (
