@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -165,13 +165,15 @@ function HojePage() {
 
   return (
     <div className="animate-rise space-y-8">
-      <div className="border-l-2 border-primary pl-4">
+      <div className="panel-raised relative overflow-hidden px-5 py-5 sm:px-6">
+        <span className="absolute inset-y-0 left-0 w-px bg-primary" />
         <p className="label-tech text-primary">Sessão em andamento</p>
-        <h1 className="mt-1.5 text-2xl font-bold tracking-tight">{workout?.name}</h1>
-        <p className="data mt-1 text-[11px] text-muted-foreground">
+        <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">{workout?.name}</h1>
+        <p className="data mt-1.5 text-[11px] text-muted-foreground">
           Prontidão {readinessLabel(readiness)} · salvamento automático
         </p>
       </div>
+
 
       <div className="space-y-6">
         {workout?.workout_exercises.map((ex) => (
@@ -377,104 +379,134 @@ function ExerciseCard({
     setLoad((prev) => Math.max(0, Math.round(((prev ?? actualLoad) + delta) * 100) / 100));
 
   return (
-    <article className="panel overflow-hidden">
+    <article className="panel-raised relative overflow-hidden">
       {/* 1. EXERCÍCIO */}
-      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold leading-tight tracking-tight">
+          <h2 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
             {exercise.exercise_name}
           </h2>
-          <p className="data mt-1 text-[11px] text-muted-foreground">
-            {exercise.sets} × {exercise.min_reps}–{exercise.max_reps} · RIR {exercise.target_rir}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <Chip>{exercise.sets} séries</Chip>
+            <Chip>
+              {exercise.min_reps}–{exercise.max_reps} reps
+            </Chip>
+            <Chip>RIR {exercise.target_rir}</Chip>
+          </div>
         </div>
-        <span className={`mt-0.5 flex size-2 shrink-0 rounded-full ${meta.dot}`} />
+        <span className={`mt-1.5 flex size-2 shrink-0 rounded-full ${meta.dot} ${meta.text}`}>
+          <span className="pulse-ring absolute size-2 rounded-full" />
+        </span>
       </header>
 
-      {/* 2. STATUS */}
-      <div className={`border-b border-border px-5 py-4 ${meta.bg}`}>
-        <div className="flex items-center gap-2">
-          <span className={`h-3 w-0.5 ${meta.dot}`} />
-          <p className={`text-[12px] font-bold uppercase tracking-[0.16em] ${meta.text}`}>
-            {meta.label}
-          </p>
-        </div>
-        <p className="mt-2 text-sm leading-snug text-foreground">{rec.message}</p>
-        {rec.establishingBaseline && (
-          <p className="mt-1 text-xs text-muted-foreground">Estabelecendo referência.</p>
-        )}
-        <button
-          type="button"
-          onClick={() => setDetails((v) => !v)}
-          className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Por que essa recomendação?
-          <ChevronDown
-            className={`size-3.5 transition-transform duration-200 ${details ? "rotate-180" : ""}`}
-          />
-        </button>
-        {details && (
-          <div className="animate-rise mt-2 border-l border-border pl-3 text-xs leading-relaxed text-muted-foreground">
-            {rec.rationale}
-            {rec.trendWarning && (
-              <span className="mt-2 block text-warning">{rec.trendWarning}</span>
+      <div className="grid gap-px border-b border-border bg-border md:grid-cols-2">
+        {/* 2. STATUS */}
+        <div className={`relative bg-surface px-5 py-5 sm:px-6 ${meta.text}`}>
+          <div className={`absolute inset-0 ${meta.bg}`} />
+          <div className="relative">
+            <p className="label-tech">Status de progressão</p>
+            <p className={`mt-2 text-[17px] font-bold uppercase tracking-[0.14em] ${meta.text}`}>
+              {meta.label}
+            </p>
+            <p className="mt-2 text-sm leading-snug text-foreground">{rec.message}</p>
+            {rec.establishingBaseline && (
+              <p className="mt-1 text-xs text-muted-foreground">Estabelecendo referência.</p>
             )}
+            <button
+              type="button"
+              onClick={() => setDetails((v) => !v)}
+              className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Por que essa recomendação?
+              <ChevronDown
+                className={`size-3.5 transition-transform duration-200 ${details ? "rotate-180" : ""}`}
+              />
+            </button>
+            {details && (
+              <div className="animate-rise mt-2 border-l border-border pl-3 text-xs leading-relaxed text-muted-foreground">
+                {rec.rationale}
+                {rec.trendWarning && (
+                  <span className="mt-2 block text-warning">{rec.trendWarning}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3. META DE HOJE */}
+        {target.reps ? (
+          <div
+            className={`tech-rings relative overflow-hidden bg-surface px-5 py-6 text-center sm:px-6 ${meta.text}`}
+          >
+            <div className={`absolute inset-0 ${meta.bg}`} />
+            <div className="relative">
+              <p className="label-tech text-center">Meta de hoje</p>
+              <p
+                className={`data mt-3 text-5xl font-bold leading-none tracking-tight sm:text-[3.4rem] ${meta.text}`}
+                style={{ textShadow: "0 0 28px currentColor" }}
+              >
+                {target.reps.join(" / ")}
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Faixa: {exercise.min_reps} – {exercise.max_reps} reps
+              </p>
+              {target.message && (
+                <p className="mt-2 text-xs font-medium text-foreground">{target.message}</p>
+              )}
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Referência, não obrigação — registre o resultado real.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-surface px-5 py-6 text-center sm:px-6">
+            <p className="label-tech">Meta de hoje</p>
+            <p className="data mt-3 text-4xl font-bold leading-none text-muted-foreground">—</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Faixa: {exercise.min_reps} – {exercise.max_reps} reps
+            </p>
           </div>
         )}
       </div>
 
-      {/* 3. META DE HOJE */}
-      {target.reps ? (
-        <div className="border-b border-border bg-info-soft px-5 py-5">
-          <p className="label-tech text-primary">Meta de hoje</p>
-          <p className="data mt-2 text-4xl font-bold leading-none tracking-tight text-primary">
-            {target.reps.join(" / ")}
-          </p>
-          <p className="data mt-2 text-[11px] text-muted-foreground">
-            Faixa {exercise.min_reps}–{exercise.max_reps} reps
-          </p>
-          {target.message && (
-            <p className="mt-2 text-xs font-medium text-foreground">{target.message}</p>
-          )}
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Referência, não obrigação — registre o resultado real.
-          </p>
-        </div>
-      ) : null}
-
       {newLoad != null && (
-        <div className="flex items-baseline justify-between border-b border-border bg-success-soft px-5 py-3">
-          <p className="label-tech text-success">Nova carga</p>
-          <p className="data text-lg font-bold leading-none text-success">{newLoad} kg</p>
+        <div className="neon-halo relative flex items-baseline justify-between border-b border-border bg-success-soft px-5 py-3.5 text-success sm:px-6">
+          <p className="label-tech text-success">Nova carga sugerida</p>
+          <p className="data text-xl font-bold leading-none text-success">{newLoad} kg</p>
         </div>
       )}
 
       {/* 4. ÚLTIMA SESSÃO / REFERÊNCIA / PR */}
-      <div className="divide-y divide-border border-b border-border">
+      <div className="grid gap-px border-b border-border bg-border sm:grid-cols-3">
         {lastSession ? (
-          <Row
+          <Stat
             label={`Última sessão · ${formatDay(lastSession.created_at)}`}
-            value={`${Number(lastSession.actual_load ?? 0)} kg · ${lastSession.sets
-              .map((s) => s.reps ?? "—")
-              .join(" / ")}`}
+            value={lastSession.sets.map((s) => s.reps ?? "—").join(" / ")}
+            hint={`${Number(lastSession.actual_load ?? 0)} kg`}
           />
         ) : (
-          <Row label="Primeira sessão registrada" value="—" hint="Vamos estabelecer sua referência." />
-        )}
-
-        {ctx.referenceLoad != null && (
-          <Row label="Carga de referência" value={`${ctx.referenceLoad} kg`} />
-        )}
-        {ctx.personalRecord != null && (
-          <Row
-            label="PR"
-            value={`${ctx.personalRecord.load} kg × ${ctx.personalRecord.reps}`}
+          <Stat
+            label="Primeira sessão registrada"
+            value="—"
+            hint="Vamos estabelecer sua referência."
           />
         )}
+        <Stat
+          label="Carga de referência"
+          value={ctx.referenceLoad != null ? `${ctx.referenceLoad} kg` : "—"}
+        />
+        <Stat
+          label="PR"
+          value={
+            ctx.personalRecord != null
+              ? `${ctx.personalRecord.load} kg × ${ctx.personalRecord.reps}`
+              : "—"
+          }
+        />
       </div>
 
       {ctx.belowReference && ctx.referenceLoad != null && (
-        <div className="border-b border-border bg-warning-soft px-5 py-4">
+        <div className="border-b border-border bg-warning-soft px-5 py-4 sm:px-6">
           <p className="label-tech text-warning">Carga abaixo da referência</p>
           <p className="mt-1.5 text-xs leading-relaxed text-foreground">
             Você utilizou uma carga abaixo da sua referência atual. O desempenho desta sessão será
@@ -487,15 +519,15 @@ function ExerciseCard({
       )}
 
       {!ctx.belowReference && ctx.status === "CONSOLIDATING" && lastSession != null && (
-        <p className="border-b border-border px-5 py-3 text-[11px] text-muted-foreground">
+        <p className="border-b border-border px-5 py-3 text-[11px] text-muted-foreground sm:px-6">
           Nova carga em consolidação — ainda não é sua carga de referência.
         </p>
       )}
 
       {/* 5. CARGA UTILIZADA */}
-      <div className="border-b border-border px-5 py-4">
+      <div className="border-b border-border px-5 py-5 sm:px-6">
         <div className="flex items-baseline justify-between">
-          <p className="label-tech">Carga utilizada</p>
+          <p className="label-tech">Carga utilizada hoje</p>
           <span className="data text-[11px] text-muted-foreground">
             {edited ? "ajustada por você" : `sugestão ${rec.suggestedLoad} kg`}
           </span>
@@ -503,35 +535,35 @@ function ExerciseCard({
         <div className="mt-3 flex items-center gap-2">
           <button
             type="button"
-            className="flex size-11 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             onClick={() => nudge(-step)}
             aria-label="Diminuir carga"
           >
-            <Minus className="size-4" />
+            <Minus className="size-5" />
           </button>
           <Input
             type="number"
             inputMode="decimal"
             step={0.5}
-            className="data h-11 rounded-sm border-border bg-transparent text-center text-xl font-bold focus-visible:border-primary"
+            className="data h-12 rounded-md border-border bg-surface-2 text-center text-2xl font-bold focus-visible:border-primary"
             value={load ?? ""}
             onChange={(e) => setLoad(e.target.value === "" ? null : Number(e.target.value))}
           />
           <button
             type="button"
-            className="flex size-11 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             onClick={() => nudge(step)}
             aria-label="Aumentar carga"
           >
-            <Plus className="size-4" />
+            <Plus className="size-5" />
           </button>
         </div>
       </div>
 
       {/* 6. SÉRIES / REPS / RIR */}
-      <div className="px-5 py-4">
+      <div className="px-5 py-5 sm:px-6">
         <div className="flex items-center gap-2">
-          <span className="label-tech w-12">Série</span>
+          <span className="label-tech w-14">Série</span>
           <span className="label-tech flex-1 text-center">Reps</span>
           <span className="label-tech flex-1 text-center">RIR</span>
         </div>
@@ -540,11 +572,11 @@ function ExerciseCard({
             const hit = target.reps?.[i] != null && (s.reps ?? 0) >= target.reps[i]!;
             return (
               <div key={s.set_number} className="flex items-center gap-2">
-                <span className="data w-12 text-sm text-muted-foreground">{s.set_number}ª</span>
+                <span className="data w-14 text-sm text-muted-foreground">{s.set_number}ª</span>
                 <Input
                   type="number"
                   inputMode="numeric"
-                  className={`data h-11 flex-1 rounded-sm border-border bg-transparent text-center text-base font-semibold transition-colors focus-visible:border-primary ${
+                  className={`data h-12 flex-1 rounded-md border-border bg-surface-2 text-center text-lg font-semibold transition-colors focus-visible:border-primary ${
                     hit ? "border-success/60 text-success" : ""
                   }`}
                   placeholder={target.reps?.[i] != null ? String(target.reps[i]) : "—"}
@@ -554,7 +586,7 @@ function ExerciseCard({
                 <Input
                   type="number"
                   inputMode="numeric"
-                  className="data h-11 flex-1 rounded-sm border-border bg-transparent text-center text-base font-semibold focus-visible:border-primary"
+                  className="data h-12 flex-1 rounded-md border-border bg-surface-2 text-center text-lg font-semibold focus-visible:border-primary"
                   placeholder="—"
                   value={s.rir ?? ""}
                   onChange={(e) => updateSet(i, "rir", e.target.value)}
@@ -568,14 +600,21 @@ function ExerciseCard({
   );
 }
 
-function Row({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Chip({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 px-5 py-3">
-      <span className="min-w-0">
-        <span className="label-tech block">{label}</span>
-        {hint && <span className="mt-0.5 block text-[11px] text-muted-foreground">{hint}</span>}
-      </span>
-      <span className="data shrink-0 text-right text-sm font-semibold">{value}</span>
+    <span className="data rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="bg-surface px-5 py-4 sm:px-6">
+      <p className="label-tech">{label}</p>
+      <p className="data mt-1.5 text-xl font-bold leading-none">{value}</p>
+      {hint && <p className="data mt-1.5 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
+
