@@ -92,7 +92,7 @@ function TreinosPage() {
                 <span className="min-w-0">
                   <span className="block truncate text-base font-semibold">{w.name}</span>
                   <span className="data block text-[11px] text-muted-foreground">
-                    {w.workout_exercises.length} exercícios
+                    {w.workout_exercises.length} exercícios · {weekdayLabels(w.weekdays)}
                   </span>
                 </span>
               </button>
@@ -107,6 +107,7 @@ function TreinosPage() {
                 <Trash2 className="size-4" />
               </button>
             </div>
+
 
             {openId === w.id && (
               <div className="animate-rise space-y-3 pb-5">
