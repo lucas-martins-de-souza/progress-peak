@@ -39,7 +39,7 @@ function Dashboard() {
   const sessions = useQuery({ queryKey: ["sessions-count"], queryFn: countSessions });
   const last = useQuery({ queryKey: ["last-session"], queryFn: fetchLastSession });
 
-  const nextWorkout = workouts.data?.[0];
+  const nextWorkout = workoutsForDay(workouts.data ?? [], todayWeekday())[0];
   const readiness = last.data ? readinessScore(last.data) : null;
 
   return (
