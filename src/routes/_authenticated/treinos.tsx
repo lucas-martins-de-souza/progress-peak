@@ -221,3 +221,58 @@ function ExerciseEditor({
     </div>
   );
 }
+
+function WeekdayPicker({
+  workoutId,
+  weekdays,
+  onChange,
+}: {
+  workoutId: string;
+  weekdays: number[];
+  onChange: () => void;
+}) {
+  const [days, setDays] = useState<number[]>(weekdays ?? []);
+  const [saving, setSaving] = useState(false);
+
+  async function toggle(value: number) {
+    const next = days.includes(value) ? days.filter((d) => d !== value) : [...days, value];
+    setDays(next);
+    setSaving(true);
+    try {
+      await updateWorkoutDays(workoutId, next);
+      onChange();
+    } catch (e) {
+      setDays(days);
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar dias.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="panel p-4">
+      <p className="label-tech text-[10px]">Dias da semana</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {WEEKDAYS.map((d) => {
+          const active = days.includes(d.value);
+          return (
+            <button
+              key={d.value}
+              type="button"
+              disabled={saving}
+              onClick={() => toggle(d.value)}
+              className={`data h-9 rounded-sm border px-3 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                active
+                  ? "border-primary bg-info-soft text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {d.short}
+            </button>
+          );
+        })}
+      </div>
+      <p className="data mt-3 text-[11px] text-muted-foreground">{weekdayLabels(days)}</p>
+    </div>
+  );
+}
