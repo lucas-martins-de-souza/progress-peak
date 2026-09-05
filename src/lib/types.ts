@@ -17,6 +17,8 @@ export interface Workout {
   id: string;
   user_id: string;
   name: string;
+  /** Dias da semana programados (0 = domingo … 6 = sábado). */
+  weekdays: number[];
   created_at: string;
 }
 
