@@ -23,20 +23,26 @@ export async function fetchWorkouts(): Promise<(Workout & { workout_exercises: W
   if (error) throw error;
   return (data ?? []).map((w) => ({
     ...(w as unknown as Workout),
+    weekdays: ((w as { weekdays: number[] | null }).weekdays ?? []).map(Number),
     workout_exercises: ((w as { workout_exercises: WorkoutExercise[] }).workout_exercises ?? []).sort(
       (a, b) => a.position - b.position,
     ),
   }));
 }
 
-export async function createWorkout(userId: string, name: string) {
+export async function createWorkout(userId: string, name: string, weekdays: number[] = []) {
   const { data, error } = await supabase
     .from("workouts")
-    .insert({ user_id: userId, name } as never)
+    .insert({ user_id: userId, name, weekdays } as never)
     .select()
     .single();
   if (error) throw error;
   return data as unknown as Workout;
+}
+
+export async function updateWorkoutDays(id: string, weekdays: number[]) {
+  const { error } = await supabase.from("workouts").update({ weekdays } as never).eq("id", id);
+  if (error) throw error;
 }
 
 export async function deleteWorkout(id: string) {
