@@ -1,0 +1,1 @@
+ALTER TABLE public.workouts ADD COLUMN IF NOT EXISTS weekdays smallint[] NOT NULL DEFAULT '{}'::smallint[];

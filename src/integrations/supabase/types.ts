@@ -270,6 +270,7 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
+          weekdays: number[]
         }
         Insert: {
           created_at?: string
@@ -277,6 +278,7 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
+          weekdays?: number[]
         }
         Update: {
           created_at?: string
@@ -284,6 +286,7 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+          weekdays?: number[]
         }
         Relationships: []
       }
