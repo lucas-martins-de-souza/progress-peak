@@ -109,6 +109,26 @@ function HojePage() {
     return <FinishedCard sessionId={sessionId!} workoutName={workout?.name ?? "Treino"} />;
   }
 
+  if (!sessionId && scheduled.length === 0) {
+    return (
+      <div className="animate-rise space-y-5">
+        <p className="label-tech text-primary">Treino de hoje</p>
+        <h1 className="text-3xl font-bold tracking-tight">Nenhum treino programado</h1>
+        <p className="text-sm text-muted-foreground">
+          Você não possui treino programado para hoje. Defina os dias da semana de cada treino em
+          Meus treinos.
+        </p>
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 text-[12px] font-semibold uppercase tracking-[0.18em]"
+        >
+          <Link to="/treinos">Programar dias</Link>
+        </Button>
+      </div>
+    );
+  }
+
   if (!sessionId) {
     return (
       <div className="animate-rise space-y-8">
@@ -123,19 +143,24 @@ function HojePage() {
         </div>
 
         <div className="space-y-2 border-t border-border pt-5">
-          <p className="label-tech">Treino</p>
-          <select
-            className={selectClass}
-            value={workoutId}
-            onChange={(e) => setWorkoutId(e.target.value)}
-          >
-            {workouts.data.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
+          <p className="label-tech">Treino de hoje</p>
+          {scheduled.length > 1 ? (
+            <select
+              className={selectClass}
+              value={workoutId}
+              onChange={(e) => setWorkoutId(e.target.value)}
+            >
+              {scheduled.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-lg font-semibold">{workout?.name}</p>
+          )}
         </div>
+
 
         <div className="space-y-6">
           <Scale label="Sono" value={checkIn.sleep_score} min={1} onChange={(v) => setCheckIn({ ...checkIn, sleep_score: v })} />
