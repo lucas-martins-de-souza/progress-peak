@@ -10,8 +10,10 @@ import {
   deleteWorkout,
   fetchWorkouts,
   updateExercise,
+  updateWorkoutDays,
   upsertExercise,
 } from "@/lib/db";
+import { WEEKDAYS, weekdayLabels } from "@/lib/weekdays";
 import type { WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
