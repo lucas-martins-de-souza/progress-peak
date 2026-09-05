@@ -226,7 +226,7 @@ function RelatorioPage() {
             >
               <div className="h-52 sm:h-60">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={weeklyLoad} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
+                  <AreaChart data={weeklyLoad} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
                     <defs>
                       <linearGradient id="loadFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
@@ -246,7 +246,7 @@ function RelatorioPage() {
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
-                      width={30}
+                      width={38}
                       stroke="var(--muted-foreground)"
                     />
                     <Tooltip
