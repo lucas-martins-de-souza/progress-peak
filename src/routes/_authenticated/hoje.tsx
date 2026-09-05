@@ -66,7 +66,7 @@ function HojePage() {
 
   useEffect(() => {
     if (scheduled.length > 0 && !scheduled.some((w) => w.id === workoutId)) {
-      setWorkoutId(scheduled[0].id);
+      setWorkoutId(scheduled[0]!.id);
     }
   }, [scheduled, workoutId]);
 
