@@ -57,11 +57,19 @@ function HojePage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
 
-  useEffect(() => {
-    if (!workoutId && workouts.data?.[0]) setWorkoutId(workouts.data[0].id);
-  }, [workouts.data, workoutId]);
+  // A seleção do treino do dia usa APENAS a programação por dia da semana.
+  const scheduled = useMemo(
+    () => workoutsForDay(workouts.data ?? [], todayWeekday()),
+    [workouts.data],
+  );
 
-  const workout = workouts.data?.find((w) => w.id === workoutId);
+  useEffect(() => {
+    if (scheduled.length > 0 && !scheduled.some((w) => w.id === workoutId)) {
+      setWorkoutId(scheduled[0].id);
+    }
+  }, [scheduled, workoutId]);
+
+  const workout = scheduled.find((w) => w.id === workoutId);
   const readiness = readinessScore(checkIn);
 
   async function begin() {
