@@ -13,6 +13,7 @@ import {
   startSession,
 } from "@/lib/db";
 import { readinessLabel, readinessScore, recommend, sessionTarget } from "@/lib/progression";
+import { todayWeekday, workoutsForDay } from "@/lib/weekdays";
 import { loadContext } from "@/lib/reference";
 import { DECISION_META, type CheckIn, type WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
