@@ -1,5 +1,3 @@
-import type { Workout } from "./types";
-
 export const WEEKDAYS: { value: number; label: string; short: string }[] = [
   { value: 1, label: "Segunda", short: "Seg" },
   { value: 2, label: "Terça", short: "Ter" },
@@ -16,7 +14,7 @@ export function todayWeekday(date = new Date()): number {
 }
 
 /** Treinos programados pelo usuário para um dia da semana. */
-export function workoutsForDay<T extends Workout>(workouts: T[], day: number): T[] {
+export function workoutsForDay<T extends { weekdays: number[] }>(workouts: readonly T[], day: number): T[] {
   return workouts.filter((w) => (w.weekdays ?? []).includes(day));
 }
 
