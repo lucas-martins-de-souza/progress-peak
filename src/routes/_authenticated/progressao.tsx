@@ -1,20 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Dumbbell, TrendingDown, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { fetchExerciseHistory, fetchPerformanceSince, fetchWorkouts } from "@/lib/db";
 import { recommend } from "@/lib/progression";
 import { DECISION_META } from "@/lib/types";
@@ -47,13 +46,16 @@ const PERIODS = [
 const fmt = (n: number) =>
   Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".", ",");
 
+const fmtVolume = (n: number) =>
+  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
+
 const selectClass =
-  "h-10 w-full rounded-sm border border-border bg-transparent px-3 text-sm text-foreground transition-colors focus:border-primary focus:outline-none";
+  "h-14 w-full appearance-none rounded-lg border border-border bg-surface/70 px-14 pr-11 text-sm font-semibold text-foreground outline-none backdrop-blur-xl transition-colors hover:bg-surface-2/70 focus:border-success";
 
 const tooltipStyle = {
   backgroundColor: "var(--surface-2)",
   border: "1px solid var(--border)",
-  borderRadius: "4px",
+  borderRadius: "8px",
   fontSize: "12px",
   fontFamily: "var(--font-mono)",
   color: "var(--foreground)",
@@ -87,37 +89,7 @@ function RelatorioPage() {
     enabled: !!exerciseId,
   });
 
-  // ---- KPIs do período ----
   const rows = perf.data ?? [];
-  const kpi = useMemo(() => {
-    const byExercise = new Map<string, { load: number; at: number }[]>();
-    for (const r of rows) {
-      const list = byExercise.get(r.workout_exercise_id) ?? [];
-      list.push({ load: Number(r.actual_load ?? 0), at: new Date(r.created_at).getTime() });
-      byExercise.set(r.workout_exercise_id, list);
-    }
-    let prs = 0;
-    let firstSum = 0;
-    let lastSum = 0;
-    for (const list of byExercise.values()) {
-      const asc = list.sort((a, b) => a.at - b.at);
-      let best = 0;
-      for (const p of asc) {
-        if (p.load > best) {
-          if (best > 0) prs++;
-          best = p.load;
-        }
-      }
-      if (asc.length > 1) {
-        firstSum += asc[0]!.load;
-        lastSum += asc[asc.length - 1]!.load;
-      }
-    }
-    const evolution = firstSum > 0 ? ((lastSum - firstSum) / firstSum) * 100 : 0;
-    const sessions = new Set(rows.map((r) => r.session_id)).size;
-    return { prs, evolution, sessions };
-  }, [rows]);
-
   // ---- Volume semanal ----
   const weekly = useMemo(() => {
     const buckets = new Map<string, number>();
@@ -133,7 +105,7 @@ function RelatorioPage() {
     return [...buckets.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([k, v]) => ({
-        semana: new Date(k).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        semana: `Semana de ${new Date(k).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`,
         volume: Math.round(v),
       }));
   }, [rows]);
@@ -143,24 +115,29 @@ function RelatorioPage() {
       ? ((weekly[weekly.length - 1]!.volume - weekly[0]!.volume) / weekly[0]!.volume) * 100
       : 0;
 
-  // ---- Série do exercício selecionado ----
-  const series = (history.data ?? [])
-    .slice()
-    .reverse()
-    .map((h) => {
-      const reps = h.sets.reduce((a, s) => a + (s.reps ?? 0), 0);
-      return {
-        date: new Date(h.created_at).toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-        }),
-        carga: Number(h.actual_load ?? 0),
-        reps,
-      };
-    });
+  // A curva usa o melhor registro de cada semana para mostrar tendência sem ruído entre sessões.
+  const weeklyLoad = useMemo(() => {
+    const buckets = new Map<string, number>();
+    for (const h of history.data ?? []) {
+      const d = new Date(h.created_at);
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      monday.setHours(0, 0, 0, 0);
+      const key = monday.toISOString();
+      buckets.set(key, Math.max(buckets.get(key) ?? 0, Number(h.actual_load ?? 0)));
+    }
+    return [...buckets.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, carga]) => ({
+        semana: `Semana de ${new Date(key).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`,
+        carga,
+      }));
+  }, [history.data]);
 
   const loadDelta =
-    series.length > 1 ? series[series.length - 1]!.carga - series[0]!.carga : 0;
+    weeklyLoad.length > 1
+      ? weeklyLoad[weeklyLoad.length - 1]!.carga - weeklyLoad[0]!.carga
+      : 0;
 
   const pr = (history.data ?? []).reduce<{ load: number; reps: number } | null>((best, h) => {
     const load = Number(h.actual_load ?? 0);
@@ -175,14 +152,16 @@ function RelatorioPage() {
   const [showHistory, setShowHistory] = useState(false);
 
   return (
-    <div className="animate-rise space-y-8 pb-4">
-      <header className="flex items-end justify-between gap-4">
+    <div className="animate-rise space-y-6 pb-6 [font-family:'Hind',sans-serif]">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="label-tech text-primary">Relatório</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Sua evolução</h1>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-success">Relatório</p>
+          <h1 className="mt-2 font-['Archivo_Black'] text-3xl tracking-normal text-foreground">Sua evolução</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Seu progresso, sem distrações.</p>
         </div>
         <select
-          className="h-9 shrink-0 rounded-sm border border-border bg-transparent px-2 text-[11px] font-medium text-muted-foreground focus:border-primary focus:outline-none"
+          aria-label="Período do relatório"
+          className="h-10 w-full rounded-lg border border-border bg-surface/70 px-3 text-xs font-semibold text-muted-foreground outline-none backdrop-blur-xl transition-colors focus:border-success sm:w-auto"
           value={weeks}
           onChange={(e) => setWeeks(Number(e.target.value))}
         >
@@ -194,20 +173,9 @@ function RelatorioPage() {
         </select>
       </header>
 
-      <section className="grid grid-cols-3 divide-x divide-border border-y border-border">
-        <Kpi label="PRs" value={`+${kpi.prs}`} tone="success" />
-        <Kpi
-          label="Evolução de carga"
-          value={`${kpi.evolution >= 0 ? "+" : ""}${fmt(kpi.evolution)}%`}
-          tone={kpi.evolution >= 0 ? "success" : "muted"}
-          className="pl-5"
-        />
-        <Kpi label="Treinos" value={String(kpi.sessions)} tone="muted" className="pl-5" />
-      </section>
-
-      <section className="space-y-6">
-        <div className="space-y-2">
-          <p className="label-tech">Exercício</p>
+      <section className="space-y-5">
+        <div className="relative">
+          <Dumbbell className="pointer-events-none absolute left-4 top-1/2 z-10 size-5 -translate-y-1/2 text-success" />
           <select
             className={selectClass}
             value={exerciseId}
@@ -219,52 +187,58 @@ function RelatorioPage() {
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         </div>
 
         {pr && pr.load > 0 && (
-          <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="relative overflow-hidden rounded-lg border border-success/30 bg-surface/70 p-5 shadow-card backdrop-blur-xl sm:p-6">
+            <div className="absolute inset-y-0 left-0 w-1 bg-success" />
+            <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="label-tech">PR atual</p>
-              <p className="data mt-1.5 text-2xl font-bold leading-none">
-                {fmt(pr.load)} kg <span className="text-muted-foreground">× {pr.reps}</span>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">PR atual</p>
+              <p className="data mt-2 text-3xl font-bold leading-none text-foreground sm:text-4xl">
+                {fmt(pr.load)} <span className="text-base text-success">kg</span>
+                <span className="ml-2 text-lg text-muted-foreground">× {pr.reps}</span>
               </p>
             </div>
             {rec && (
               <span
-                className={`text-[11px] font-bold uppercase tracking-[0.14em] ${DECISION_META[rec.decision].text}`}
+                className={`rounded-md border border-current/25 bg-background/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] ${DECISION_META[rec.decision].text}`}
               >
                 {DECISION_META[rec.decision].label}
               </span>
             )}
+            </div>
           </div>
         )}
 
-        {series.length === 0 ? (
-          <p className="border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        {weeklyLoad.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border bg-surface/40 p-8 text-center text-sm text-muted-foreground">
             Ainda não há sessões registradas para este exercício.
           </p>
         ) : (
           <>
             <Chart
-              title="Carga"
+              title="Evolução da carga"
               delta={`${loadDelta >= 0 ? "+" : ""}${fmt(loadDelta)} kg`}
-              hint="desde o início do histórico"
+              hint="no período"
               tone={loadDelta >= 0 ? "success" : "muted"}
             >
-              <div className="h-40">
+              <div className="h-52 sm:h-60">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={series} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                  <AreaChart data={weeklyLoad} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
                     <defs>
                       <linearGradient id="loadFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                        <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
+                        <stop offset="100%" stopColor="var(--success)" stopOpacity={0.01} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} stroke="var(--border)" />
+                    <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.55} />
                     <XAxis
-                      dataKey="date"
+                      dataKey="semana"
                       tickLine={false}
                       axisLine={false}
+                      tickFormatter={(value: string) => value.replace("Semana de ", "")}
                       tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
                       stroke="var(--muted-foreground)"
                     />
@@ -283,9 +257,10 @@ function RelatorioPage() {
                     <Area
                       type="monotone"
                       dataKey="carga"
-                      stroke="var(--primary)"
-                      strokeWidth={2}
+                      stroke="var(--success)"
+                      strokeWidth={2.5}
                       fill="url(#loadFill)"
+                      activeDot={{ r: 5, fill: "var(--success)", stroke: "var(--background)", strokeWidth: 2 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -296,74 +271,56 @@ function RelatorioPage() {
               title="Volume semanal"
               delta={`${volumeDelta >= 0 ? "+" : ""}${fmt(volumeDelta)}%`}
               hint="no período"
-              tone="muted"
+              tone={volumeDelta >= 0 ? "success" : "muted"}
             >
-              <div className="h-28">
+              <div className="h-44 sm:h-52">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weekly} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                    <XAxis
-                      dataKey="semana"
+                  <BarChart data={weekly} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
+                    <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.45} />
+                    <XAxis dataKey="semana" hide />
+                    <YAxis
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 10, fontFamily: "var(--font-mono)" }}
+                      tickFormatter={(value: number) => fmtVolume(value)}
+                      width={48}
                       stroke="var(--muted-foreground)"
                     />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       cursor={{ fill: "var(--surface-2)" }}
-                      formatter={(v: number) => [`${v} kg`, "Volume"]}
+                      formatter={(v: number) => [`${fmtVolume(v)} kg`, "Volume"]}
                     />
-                    <Bar dataKey="volume" fill="var(--primary)" opacity={0.55} maxBarSize={28} />
+                    <Bar dataKey="volume" fill="var(--primary)" opacity={0.78} maxBarSize={44} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Chart>
 
-            <Chart title="Repetições por sessão" tone="muted">
-              <div className="h-20">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={series} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="date" hide />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      cursor={{ stroke: "var(--border)" }}
-                      formatter={(v: number) => [`${v} reps`, "Total"]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="reps"
-                      stroke="var(--muted-foreground)"
-                      strokeWidth={1.5}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Chart>
-
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setShowHistory((v) => !v)}
-              className="flex w-full items-center justify-between border-y border-border py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
+              className="h-12 w-full justify-between rounded-lg border border-border bg-surface/50 px-4 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground hover:bg-surface-2"
             >
               Histórico completo
               <ChevronDown
                 className={`size-4 transition-transform duration-200 ${showHistory ? "rotate-180" : ""}`}
               />
-            </button>
+            </Button>
 
             {showHistory && (
-              <div className="animate-rise divide-y divide-border border-b border-border text-sm">
-                {history.data!.map((h) => (
-                  <div key={h.created_at} className="flex justify-between gap-3 py-2.5">
-                    <span className="data text-xs text-muted-foreground">
+              <div className="animate-rise divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface/40 text-sm">
+                {(history.data ?? []).map((h) => (
+                  <div key={h.created_at} className="grid grid-cols-[auto_1fr] items-center gap-5 px-4 py-4 sm:grid-cols-[7rem_6rem_1fr]">
+                    <span className="data text-xs font-semibold text-muted-foreground">
                       {new Date(h.created_at).toLocaleDateString("pt-BR")}
                     </span>
-                    <span className="data text-right text-xs">
-                      {fmt(Number(h.actual_load ?? 0))} kg ·{" "}
-                      {h.sets
-                        .map((s) => `${s.reps ?? "-"}${s.rir != null ? `(RIR ${s.rir})` : ""}`)
-                        .join(" / ")}
+                    <span className="data text-right text-sm font-bold text-foreground sm:text-left">
+                      {fmt(Number(h.actual_load ?? 0))} kg
+                    </span>
+                    <span className="data col-span-2 text-right text-xs text-muted-foreground sm:col-span-1">
+                      {h.sets.map((s) => s.reps ?? "-").join(" / ")} reps
                     </span>
                   </div>
                 ))}
@@ -390,40 +347,27 @@ function Chart({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <p className="label-tech">{title}</p>
+    <div className="rounded-lg border border-border bg-surface/55 p-4 shadow-card backdrop-blur-xl sm:p-6">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Comparação semanal</p>
+        </div>
         {delta && (
-          <p className="data text-sm font-bold">
-            <span className={tone === "success" ? "text-success" : "text-foreground"}>{delta}</span>
-            {hint && <span className="ml-1.5 text-[10px] text-muted-foreground">{hint}</span>}
-          </p>
+          <div className="flex items-center gap-2 text-right">
+            {tone === "success" ? (
+              <TrendingUp className="size-4 text-success" />
+            ) : (
+              <TrendingDown className="size-4 text-muted-foreground" />
+            )}
+            <p className="data text-sm font-bold">
+              <span className={tone === "success" ? "text-success" : "text-foreground"}>{delta}</span>
+              {hint && <span className="block text-[9px] font-medium text-muted-foreground">{hint}</span>}
+            </p>
+          </div>
         )}
       </div>
       {children}
-    </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  tone,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  tone: "success" | "muted";
-  className?: string;
-}) {
-  return (
-    <div className={`py-5 pr-3 ${className}`}>
-      <p
-        className={`data text-2xl font-bold leading-none ${tone === "success" ? "text-success" : "text-foreground"}`}
-      >
-        {value}
-      </p>
-      <p className="label-tech mt-2 leading-tight">{label}</p>
     </div>
   );
 }
