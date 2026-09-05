@@ -10,8 +10,10 @@ import {
   deleteWorkout,
   fetchWorkouts,
   updateExercise,
+  updateWorkoutDays,
   upsertExercise,
 } from "@/lib/db";
+import { WEEKDAYS, weekdayLabels } from "@/lib/weekdays";
 import type { WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,7 +94,7 @@ function TreinosPage() {
                 <span className="min-w-0">
                   <span className="block truncate text-base font-semibold">{w.name}</span>
                   <span className="data block text-[11px] text-muted-foreground">
-                    {w.workout_exercises.length} exercícios
+                    {w.workout_exercises.length} exercícios · {weekdayLabels(w.weekdays)}
                   </span>
                 </span>
               </button>
@@ -108,8 +110,11 @@ function TreinosPage() {
               </button>
             </div>
 
+
             {openId === w.id && (
               <div className="animate-rise space-y-3 pb-5">
+                <WeekdayPicker workoutId={w.id} weekdays={w.weekdays} onChange={refresh} />
+
                 {w.workout_exercises.map((ex) => (
                   <ExerciseEditor key={ex.id} exercise={ex} onChange={refresh} />
                 ))}
@@ -213,6 +218,61 @@ function ExerciseEditor({
         {num("current_load", "Carga (kg)", 0.5)}
       </div>
       <div className="mt-3">{num("suggested_increment", "Incremento sugerido (kg)", 0.5)}</div>
+    </div>
+  );
+}
+
+function WeekdayPicker({
+  workoutId,
+  weekdays,
+  onChange,
+}: {
+  workoutId: string;
+  weekdays: number[];
+  onChange: () => void;
+}) {
+  const [days, setDays] = useState<number[]>(weekdays ?? []);
+  const [saving, setSaving] = useState(false);
+
+  async function toggle(value: number) {
+    const next = days.includes(value) ? days.filter((d) => d !== value) : [...days, value];
+    setDays(next);
+    setSaving(true);
+    try {
+      await updateWorkoutDays(workoutId, next);
+      onChange();
+    } catch (e) {
+      setDays(days);
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar dias.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="panel p-4">
+      <p className="label-tech text-[10px]">Dias da semana</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {WEEKDAYS.map((d) => {
+          const active = days.includes(d.value);
+          return (
+            <button
+              key={d.value}
+              type="button"
+              disabled={saving}
+              onClick={() => toggle(d.value)}
+              className={`data h-9 rounded-sm border px-3 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                active
+                  ? "border-primary bg-info-soft text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {d.short}
+            </button>
+          );
+        })}
+      </div>
+      <p className="data mt-3 text-[11px] text-muted-foreground">{weekdayLabels(days)}</p>
     </div>
   );
 }

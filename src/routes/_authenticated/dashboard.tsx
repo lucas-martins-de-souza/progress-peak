@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { countSessions, fetchLastSession, fetchProfile, fetchWorkouts } from "@/lib/db";
 import { readinessLabel, readinessScore } from "@/lib/progression";
+import { todayWeekday, workoutsForDay } from "@/lib/weekdays";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -39,7 +40,7 @@ function Dashboard() {
   const sessions = useQuery({ queryKey: ["sessions-count"], queryFn: countSessions });
   const last = useQuery({ queryKey: ["last-session"], queryFn: fetchLastSession });
 
-  const nextWorkout = workouts.data?.[0];
+  const nextWorkout = workoutsForDay(workouts.data ?? [], todayWeekday())[0];
   const readiness = last.data ? readinessScore(last.data) : null;
 
   return (
@@ -54,12 +55,12 @@ function Dashboard() {
       <section className="relative border-l-2 border-primary pl-5">
         <p className="label-tech text-primary">Treino de hoje</p>
         <h2 className="mt-2 text-4xl font-bold leading-none tracking-tight">
-          {nextWorkout?.name ?? "Nenhum treino"}
+          {nextWorkout?.name ?? "Nenhum treino programado"}
         </h2>
         <p className="data mt-3 text-sm text-muted-foreground">
           {nextWorkout
             ? `${nextWorkout.workout_exercises.length} exercícios`
-            : "Monte seu primeiro treino para começar."}
+            : "Você não possui treino programado para hoje."}
         </p>
         <div className="mt-6">
           {nextWorkout ? (
