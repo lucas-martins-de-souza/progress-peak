@@ -263,11 +263,39 @@ export type Database = {
           },
         ]
       }
+      workout_shares: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          id?: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           created_at: string
           id: string
           name: string
+          source_share_code: string | null
           updated_at: string
           user_id: string
           weekdays: number[]
@@ -276,6 +304,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          source_share_code?: string | null
           updated_at?: string
           user_id: string
           weekdays?: number[]
@@ -284,6 +313,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          source_share_code?: string | null
           updated_at?: string
           user_id?: string
           weekdays?: number[]
