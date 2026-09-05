@@ -111,6 +111,8 @@ function TreinosPage() {
 
             {openId === w.id && (
               <div className="animate-rise space-y-3 pb-5">
+                <WeekdayPicker workoutId={w.id} weekdays={w.weekdays} onChange={refresh} />
+
                 {w.workout_exercises.map((ex) => (
                   <ExerciseEditor key={ex.id} exercise={ex} onChange={refresh} />
                 ))}
