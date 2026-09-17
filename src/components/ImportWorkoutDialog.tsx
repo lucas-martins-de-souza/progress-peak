@@ -21,11 +21,13 @@ export function ImportWorkoutDialog({
   open,
   onOpenChange,
   onImported,
+  initialCode,
 }: {
   userId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImported: () => void;
+  initialCode?: string;
 }) {
   const [method, setMethod] = useState<ImportMethod>("choose");
   const [codeInput, setCodeInput] = useState("");
@@ -35,6 +37,7 @@ export function ImportWorkoutDialog({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const handledInitialCode = useRef<string | null>(null);
 
   useEffect(() => {
     if (open) return;
@@ -46,6 +49,14 @@ export function ImportWorkoutDialog({
     setError(null);
     setLoading(false);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !initialCode || handledInitialCode.current === initialCode) return;
+    handledInitialCode.current = initialCode;
+    setMethod("code");
+    setCodeInput(initialCode);
+    void loadCode(initialCode);
+  }, [initialCode, open]);
 
   async function showPreview(workout: SharedWorkout, code?: string) {
     const existing = await findExistingImport(workout, code);
@@ -90,7 +101,7 @@ export function ImportWorkoutDialog({
         setError("Não foi possível importar este treino. O arquivo não é válido ou é incompatível com esta versão do LoadWise.");
         return;
       }
-      await showPreview(parsed.workout);
+      await showPreview(parsed.workout, parsed.code);
     } catch {
       setError("Não foi possível importar este treino. O arquivo não é válido ou é incompatível com esta versão do LoadWise.");
     } finally {
@@ -227,7 +238,12 @@ export function ImportWorkoutDialog({
 
 function QrScanner({ onResult, onBack }: { onResult: (value: string) => void; onBack: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const resultRef = useRef(onResult);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  useEffect(() => {
+    resultRef.current = onResult;
+  }, [onResult]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -245,7 +261,7 @@ function QrScanner({ onResult, onBack }: { onResult: (value: string) => void; on
             if (!active) return;
             active = false;
             scanner?.stop();
-            onResult(result.data);
+            resultRef.current(result.data);
           },
           { preferredCamera: "environment", highlightScanRegion: true, highlightCodeOutline: true },
         );
@@ -260,7 +276,7 @@ function QrScanner({ onResult, onBack }: { onResult: (value: string) => void; on
       scanner?.stop();
       scanner?.destroy();
     };
-  }, [onResult]);
+  }, []);
 
   return (
     <div className="space-y-4">

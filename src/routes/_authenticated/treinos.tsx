@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ChevronDown, Import, Plus, Share2, Trash2 } from "lucide-react";
@@ -22,6 +22,9 @@ import { ShareWorkoutDialog } from "@/components/ShareWorkoutDialog";
 import type { WorkoutWithExercises } from "@/lib/share";
 
 export const Route = createFileRoute("/_authenticated/treinos")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    share: typeof search.share === "string" ? search.share : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Meus treinos — LM Progress" },
@@ -43,12 +46,14 @@ const fieldClass =
 
 function TreinosPage() {
   const { userId } = useAuth();
+  const { share } = Route.useSearch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const workouts = useQuery({ queryKey: ["workouts"], queryFn: fetchWorkouts });
   const [newName, setNewName] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [shareWorkout, setShareWorkout] = useState<WorkoutWithExercises | null>(null);
-  const [importOpen, setImportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(Boolean(share));
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["workouts"] });
 
@@ -193,7 +198,11 @@ function TreinosPage() {
       <ImportWorkoutDialog
         userId={userId}
         open={importOpen}
-        onOpenChange={setImportOpen}
+        initialCode={share}
+        onOpenChange={(open) => {
+          setImportOpen(open);
+          if (!open && share) void navigate({ to: "/treinos", search: {}, replace: true });
+        }}
         onImported={refresh}
       />
     </div>
