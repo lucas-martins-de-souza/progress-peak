@@ -165,7 +165,7 @@ export function buildShareFile(workout: SharedWorkout, code?: string): { filenam
 }
 
 export type FileParseResult =
-  | { ok: true; workout: SharedWorkout }
+  | { ok: true; workout: SharedWorkout; code?: string }
   | { ok: false; reason: "invalid" | "version" };
 
 export function parseShareFile(text: string): FileParseResult {
@@ -183,7 +183,8 @@ export function parseShareFile(text: string): FileParseResult {
   if ((version as number) > SHARE_VERSION) return { ok: false, reason: "version" };
   const workout = parseSharedWorkout(d["workout"]);
   if (!workout) return { ok: false, reason: "invalid" };
-  return { ok: true, workout };
+  const code = typeof d["code"] === "string" ? normalizeCode(d["code"]) ?? undefined : undefined;
+  return { ok: true, workout, code };
 }
 
 /** Cria uma cópia independente do treino na conta de quem importou. */
@@ -219,7 +220,10 @@ export async function importSharedWorkout(
   }));
   if (rows.length > 0) {
     const { error: exErr } = await supabase.from("workout_exercises").insert(rows as never);
-    if (exErr) throw exErr;
+    if (exErr) {
+      await supabase.from("workouts").delete().eq("id", workoutId);
+      throw exErr;
+    }
   }
   return workoutId;
 }

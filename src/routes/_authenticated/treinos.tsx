@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Import, Plus, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -17,8 +17,14 @@ import { WEEKDAYS, weekdayLabels } from "@/lib/weekdays";
 import type { WorkoutExercise } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImportWorkoutDialog } from "@/components/ImportWorkoutDialog";
+import { ShareWorkoutDialog } from "@/components/ShareWorkoutDialog";
+import type { WorkoutWithExercises } from "@/lib/share";
 
 export const Route = createFileRoute("/_authenticated/treinos")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    share: typeof search.share === "string" ? search.share : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Meus treinos — LM Progress" },
@@ -28,6 +34,8 @@ export const Route = createFileRoute("/_authenticated/treinos")({
       },
       { property: "og:title", content: "Meus treinos — LM Progress" },
       { property: "og:description", content: "Monte e edite seus próprios treinos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: TreinosPage,
@@ -38,10 +46,14 @@ const fieldClass =
 
 function TreinosPage() {
   const { userId } = useAuth();
+  const { share } = Route.useSearch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const workouts = useQuery({ queryKey: ["workouts"], queryFn: fetchWorkouts });
   const [newName, setNewName] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [shareWorkout, setShareWorkout] = useState<WorkoutWithExercises | null>(null);
+  const [importOpen, setImportOpen] = useState(Boolean(share));
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["workouts"] });
 
@@ -57,9 +69,18 @@ function TreinosPage() {
 
   return (
     <div className="animate-rise space-y-8">
-      <div>
-        <p className="label-tech text-primary">Biblioteca</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Meus treinos</h1>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="label-tech text-primary">Biblioteca</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Meus treinos</h1>
+        </div>
+        <Button
+          variant="outline"
+          className="h-10 shrink-0 rounded-sm px-3 text-[11px] font-semibold uppercase tracking-[0.12em]"
+          onClick={() => setImportOpen(true)}
+        >
+          <Import className="size-4" /> Importar
+        </Button>
       </div>
 
       <div className="flex gap-2 border-y border-border py-4">
@@ -98,16 +119,31 @@ function TreinosPage() {
                   </span>
                 </span>
               </button>
-              <button
-                className="rounded-sm p-2 text-muted-foreground transition-colors hover:text-danger"
-                onClick={async () => {
-                  await deleteWorkout(w.id);
-                  refresh();
-                }}
-                aria-label="Excluir treino"
-              >
-                <Trash2 className="size-4" />
-              </button>
+              <div className="flex shrink-0 items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-sm text-muted-foreground hover:text-primary"
+                  onClick={() => setShareWorkout(w)}
+                  aria-label={`Compartilhar ${w.name}`}
+                  title="Compartilhar treino"
+                >
+                  <Share2 className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-sm text-muted-foreground hover:text-danger"
+                  onClick={async () => {
+                    await deleteWorkout(w.id);
+                    refresh();
+                  }}
+                  aria-label="Excluir treino"
+                  title="Excluir treino"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
             </div>
 
 
@@ -150,6 +186,25 @@ function TreinosPage() {
           Você ainda não criou nenhum treino. Comece pelo campo acima.
         </p>
       )}
+
+      <ShareWorkoutDialog
+        workout={shareWorkout}
+        userId={userId}
+        open={Boolean(shareWorkout)}
+        onOpenChange={(open) => {
+          if (!open) setShareWorkout(null);
+        }}
+      />
+      <ImportWorkoutDialog
+        userId={userId}
+        open={importOpen}
+        initialCode={share}
+        onOpenChange={(open) => {
+          setImportOpen(open);
+          if (!open && share) void navigate({ to: "/treinos", search: {}, replace: true });
+        }}
+        onImported={refresh}
+      />
     </div>
   );
 }
